@@ -1,7 +1,7 @@
 if !exists('g:loaded_telescope') | finish | endif
 
 nnoremap <silent> ff <cmd>lua require('telescope.builtin').find_files()<cr>
-nnoremap <silent> fr <cmd>lua require('telescope.builtin').live_grep()<cr>
+nnoremap <silent> fg <cmd>lua require('telescope.builtin').live_grep()<cr>
 nnoremap <silent> fb <cmd>lua require('telescope.builtin').file_browser()<cr>
 nnoremap <silent> \\ <cmd>Telescope buffers<cr>
 nnoremap <silent> fh <cmd>Telescope help_tags<cr>
@@ -14,13 +14,18 @@ end
 local telescope = require('telescope')
 local actions = require('telescope.actions')
 
-telescope.setup{
+telescope.setup {
   defaults = {
     mappings = {
       n = {
         ["q"] = actions.close
       },
     },
+  }, 
+  pickers = {
+    find_files = {
+      hidden = true
+    }
   }
 }
 EOF
