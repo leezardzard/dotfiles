@@ -1,0 +1,111 @@
+#!/bin/sh
+
+###############################################################################
+# Install Xcode command line tools
+###############################################################################
+echo "Installing Xcode Command Line Tools..."
+xcode-select --install
+
+
+###############################################################################
+# Check for Homebrew, else install
+###############################################################################
+echo "Checking for, or Installing Homebrew..."
+if [ -z `command -v brew` ]; then
+    echo "Brew is missing! Installing it..."
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+fi;
+
+
+###############################################################################
+# Make sure we're on latest Homebrew
+###############################################################################
+echo "Homebrew: updating..."
+brew update
+
+
+###############################################################################
+# Upgrade any already-installed formulae
+###############################################################################
+echo "Homebrew: upgrading..."
+brew upgrade
+
+
+###############################################################################
+# Install shell relative packages
+###############################################################################
+echo "Homebrew: installing shell packages..."
+brew install fish
+
+###############################################################################
+# Install binaries and other packages
+###############################################################################
+echo "Homebrew: installing packages..."
+brew install ffmpeg
+brew install git
+brew install httpie
+brew install imagemagick
+# brew install mackup
+brew install mas
+# brew install nginx
+brew install node
+# brew install nvm
+brew install rename
+brew install tree
+brew install webkit2png
+brew install yarn
+
+
+###############################################################################
+# Run Homebrew cleanup to remove installation/cached files
+###############################################################################
+echo "Homebrew: cleaning up..."
+brew cleanup
+
+
+###############################################################################
+# Install applications with Homebrew Cask
+###############################################################################
+echo "Homebrew Cask: installing apps..."
+# brew install 1password --cask
+brew install alfred --cask
+brew install docker --cask
+brew install figma --cask
+brew install firefox --cask
+# brew install framer-x --cask
+brew install github --cask
+brew install google-chrome --cask
+# brew install hyper --cask
+brew install imageoptim --cask
+# brew install iina --cask
+brew install iterm2 --cask
+brew install notion --cask
+brew install nucleo --cask
+brew install postman --cask
+# brew install skype --cask
+brew install slack --cask
+brew install spectacle --cask
+brew install spotify --cask
+# brew install sourcetree --cask
+brew install tor-browser --cask
+brew install transmit --cask
+# brew install tunnelbear --cask
+brew install visual-studio-code --cask
+# brew install whatsapp --cask
+
+###############################################################################
+# Cleanup
+# NOTE: temporarily disable, cause when the upgrade fails, and the old pkg is reinstalled.
+# Ref: https://github.com/Homebrew/brew/issues/4660
+###############################################################################
+# brew cask cleanup
+
+###############################################################################
+# Install applications with mas-cli (Mac App Store CLI)
+###############################################################################
+echo "mas-cli: installing Mac App Store apps..."
+# # Line
+mas install 539883307
+
+
+echo "macOS Config, Dev Tools, Apps are Done Setup!"
