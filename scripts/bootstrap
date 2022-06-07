@@ -56,19 +56,11 @@ brew install webkit2png
 brew install lerna
 
 ###############################################################################
-# Run Homebrew cleanup to remove installation/cached files
-###############################################################################
-echo "Homebrew: cleaning up..."
-brew cleanup
-
-
-###############################################################################
 # Install applications with Homebrew Cask
 ###############################################################################
 echo "Homebrew Cask: installing apps..."
 # brew install 1password --cask
 brew install alfred --cask
-brew install docker --cask
 brew install figma --cask
 brew install firefox --cask
 # brew install framer-x --cask
@@ -93,11 +85,10 @@ brew install visual-studio-code --cask
 # brew install whatsapp --cask
 
 ###############################################################################
-# Cleanup
-# NOTE: temporarily disable, cause when the upgrade fails, and the old pkg is reinstalled.
-# Ref: https://github.com/Homebrew/brew/issues/4660
+# Install docker relative packages
 ###############################################################################
-# brew cask cleanup
+brew install docker --cask
+brew install docker-compose
 
 ###############################################################################
 # Install applications with mas-cli (Mac App Store CLI)
