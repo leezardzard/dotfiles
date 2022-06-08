@@ -54,6 +54,7 @@ brew install rename
 brew install tree
 brew install webkit2png
 brew install lerna
+brew install thefuck
 
 ###############################################################################
 # Install applications with Homebrew Cask
