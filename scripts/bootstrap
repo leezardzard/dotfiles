@@ -96,8 +96,10 @@ brew install docker-compose
 # Install applications with mas-cli (Mac App Store CLI)
 ###############################################################################
 echo "mas-cli: installing Mac App Store apps..."
-# # Line
+# Line
 mas install 539883307
+# Amphetamine
+mas install 937984704
 
 
 echo "macOS Config, Dev Tools, Apps are Done Setup!"
