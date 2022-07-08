@@ -86,6 +86,7 @@ brew install visual-studio-code --cask
 # brew install whatsapp --cask
 brew install espanso --cask
 brew install via --cask
+brew install ngrok --cask
 
 ###############################################################################
 # Install docker relative packages
