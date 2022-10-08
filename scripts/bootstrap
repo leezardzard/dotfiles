@@ -88,6 +88,7 @@ brew install espanso --cask
 brew install via --cask
 brew install ngrok --cask
 brew install robo-3t --cask
+brew install altair-graphql-client --cask
 
 ###############################################################################
 # Install docker relative packages
