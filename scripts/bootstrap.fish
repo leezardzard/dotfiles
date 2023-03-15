@@ -12,6 +12,7 @@ fisher install IlanCosman/tide@v5
 ###############################################################################
 fisher install jorgebucaran/nvm.fish
 fisher install jethrokuan/z
+fisher install evanlucas/fish-kubectl-completions
 
 ###############################################################################
 # Install brew packages for fish settings
