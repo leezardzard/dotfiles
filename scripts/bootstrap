@@ -55,6 +55,10 @@ brew install tree
 brew install webkit2png
 brew install lerna
 brew install thefuck
+brew install awscli
+brew install kubernetes-cli
+brew tap weaveworks/tap
+brew install weaveworks/tap/eksctl
 
 ###############################################################################
 # Install applications with Homebrew Cask
