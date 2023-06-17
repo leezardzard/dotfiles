@@ -101,6 +101,13 @@ brew install docker --cask
 brew install docker-compose
 
 ###############################################################################
+# Install minikube relative packages
+###############################################################################
+mas install 497799835 # Xcode
+brew install kubectl
+brew install kind
+
+###############################################################################
 # Install applications with mas-cli (Mac App Store CLI)
 ###############################################################################
 echo "mas-cli: installing Mac App Store apps..."
