@@ -6,16 +6,14 @@
 echo "Installing Xcode Command Line Tools..."
 xcode-select --install
 
-
 ###############################################################################
 # Check for Homebrew, else install
 ###############################################################################
 echo "Checking for, or Installing Homebrew..."
-if [ -z `command -v brew` ]; then
+if [ -z $(command -v brew) ]; then
     echo "Brew is missing! Installing it..."
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-fi;
-
+fi
 
 ###############################################################################
 # Make sure we're on latest Homebrew
@@ -23,13 +21,11 @@ fi;
 echo "Homebrew: updating..."
 brew update
 
-
 ###############################################################################
 # Upgrade any already-installed formulae
 ###############################################################################
 echo "Homebrew: upgrading..."
 brew upgrade
-
 
 ###############################################################################
 # Install shell relative packages
@@ -115,6 +111,5 @@ echo "mas-cli: installing Mac App Store apps..."
 mas install 539883307
 # Amphetamine
 mas install 937984704
-
 
 echo "macOS Config, Dev Tools, Apps are Done Setup!"

@@ -10,9 +10,9 @@ fisher install IlanCosman/tide@v5
 ###############################################################################
 # Install packages
 ###############################################################################
-fisher install jorgebucaran/nvm.fish
 fisher install jethrokuan/z
 fisher install evanlucas/fish-kubectl-completions
+fisher install edc/bass
 
 ###############################################################################
 # Install brew packages for fish settings
