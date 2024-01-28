@@ -28,13 +28,6 @@ echo "Homebrew: upgrading..."
 brew upgrade
 
 ###############################################################################
-# Install shell relative packages
-###############################################################################
-echo "Homebrew: installing shell packages..."
-brew install fish
-curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
-
-###############################################################################
 # Install binaries and other packages
 ###############################################################################
 echo "Homebrew: installing packages..."
@@ -57,6 +50,16 @@ brew tap weaveworks/tap
 brew install weaveworks/tap/eksctl
 
 ###############################################################################
+# Install iterm2 relative packages
+###############################################################################
+brew install iterm2 --cask
+brew tap homebrew/cask-fonts
+
+# Note: you can use this commnad to find the favorite fonts
+# > brew search --cask nerd
+brew install --cask font-hack-nerd-font
+
+###############################################################################
 # Install applications with Homebrew Cask
 ###############################################################################
 echo "Homebrew Cask: installing apps..."
@@ -70,7 +73,7 @@ brew install google-chrome --cask
 # brew install hyper --cask
 brew install imageoptim --cask
 # brew install iina --cask
-brew install iterm2 --cask
+
 brew install notion --cask
 brew install nucleo --cask
 brew install postman --cask
@@ -84,8 +87,8 @@ brew install transmit --cask
 # brew install tunnelbear --cask
 brew install visual-studio-code --cask
 # brew install whatsapp --cask
-brew install espanso --cask
-brew install via --cask
+# brew install espanso --cask
+# brew install via --cask
 brew install ngrok --cask
 brew install robo-3t --cask
 brew install altair-graphql-client --cask
@@ -95,6 +98,8 @@ brew install altair-graphql-client --cask
 ###############################################################################
 brew install docker --cask
 brew install docker-compose
+mkdir -p ~/.docker/cli-plugins
+ln -sfn /opt/homebrew/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
 
 ###############################################################################
 # Install minikube relative packages
