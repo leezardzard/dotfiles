@@ -28,3 +28,14 @@ exec $SHELL
 ###############################################################################
 brew install zsh-autosuggestions
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+
+###############################################################################
+# Install go
+###############################################################################
+brew install go
+
+echo "export GOPATH=\$HOME/golang" >> ~/.zshrc
+echo "export GOROOT=/opt/homebrew/opt/go/libexec" >> ~/.zshrc
+echo "export PATH=\$PATH:\$GOPATH/bin" >> ~/.zshrc
+echo "export PATH=\$PATH:\$GOROOT/bin" >> ~/.zshrc
