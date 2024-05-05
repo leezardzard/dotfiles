@@ -58,6 +58,7 @@ brew tap homebrew/cask-fonts
 # Note: you can use this commnad to find the favorite fonts
 # > brew search --cask nerd
 brew install --cask font-hack-nerd-font
+brew install --cask font-meslo-lg-nerd-font
 
 ###############################################################################
 # Install applications with Homebrew Cask
