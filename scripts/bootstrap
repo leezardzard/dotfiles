@@ -43,7 +43,6 @@ brew install rename
 brew install tree
 brew install webkit2png
 brew install lerna
-brew install thefuck
 brew install awscli
 brew install kubernetes-cli
 brew tap weaveworks/tap
