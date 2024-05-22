@@ -6,4 +6,4 @@
 .config/fish/fishd.*
 
 .config/thefuck/*
-# .config/bat/*
+.config/bat/*

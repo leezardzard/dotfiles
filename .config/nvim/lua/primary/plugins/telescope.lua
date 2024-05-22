@@ -5,7 +5,7 @@ return {
     "nvim-lua/plenary.nvim",
     { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
     "nvim-tree/nvim-web-devicons",
-    -- "folke/todo-comments.nvim",
+    "folke/todo-comments.nvim",
   },
   config = function()
     local telescope = require("telescope")
@@ -34,6 +34,11 @@ return {
           },
         },
       },
+      pickers = {
+        find_files = {
+          hidden = true
+        }
+      }
     })
 
     telescope.load_extension("fzf")
