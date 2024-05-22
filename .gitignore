@@ -4,4 +4,6 @@
 .config/fish/fish_variables
 .config/fish/fish_plugins
 .config/fish/fishd.*
+
 .config/thefuck/*
+# .config/bat/*
