@@ -30,8 +30,14 @@ source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 ###############################################################################
 # Fix zsh key binding issues
 ###############################################################################
+cat <<'EOT' >>~/.zshrc
+
+###############################################################################
+# Setup bindkey
+###############################################################################
 bindkey "[D" backward-word
 bindkey "[C" forward-word
+EOT
 
 ###############################################################################
 # Install bat (better version of cat)
@@ -224,7 +230,13 @@ EOT
 ###############################################################################
 brew install go
 
-echo "export GOPATH=\$HOME/golang" >>~/.zshrc
-echo "export GOROOT=/opt/homebrew/opt/go/libexec" >>~/.zshrc
-echo "export PATH=\$PATH:\$GOPATH/bin" >>~/.zshrc
-echo "export PATH=\$PATH:\$GOROOT/bin" >>~/.zshrc
+cat <<'EOT' >>~/.zshrc
+
+###############################################################################
+# Setup go
+###############################################################################
+export GOPATH=\$HOME/golang
+export GOROOT=/opt/homebrew/opt/go/libexec
+export PATH=\$PATH:\$GOPATH/bin
+export PATH=\$PATH:\$GOROOT/bin
+EOT

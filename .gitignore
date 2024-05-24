@@ -7,3 +7,5 @@
 
 .config/thefuck/*
 .config/bat/*
+.config/configstore/*
+.config/iterm2/*
