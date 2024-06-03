@@ -241,3 +241,19 @@ export GOROOT=/opt/homebrew/opt/go/libexec
 export PATH=\$PATH:\$GOPATH/bin
 export PATH=\$PATH:\$GOROOT/bin
 EOT
+
+###############################################################################
+# Add FFMPEG function
+###############################################################################
+cat <<'EOT' >>~/.zshrc
+
+###############################################################################
+# Add FFMPEG function
+###############################################################################
+compress_video() {
+    local source_file=$1
+    local destination_file=$2
+
+    ffmpeg -i "$source_file" -vcodec libx264 -preset fast -crf 20 -y -vf "scale=1920:-1" -acodec libmp3lame -ab 128k "$destination_file"
+}
+EOT
