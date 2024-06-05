@@ -5,10 +5,9 @@
 ./scripts/bootstrap
 ```
 
-## STEP2: To install fish shell relative packages.
-```fish
-fish ./scripts/bootstrap.fish
+## STEP2: To install zsh shell relative packages.
+Option1:
+```shell
+sh ./scripts/bootstrap.zsh
 
 ```
-
-> Please make sure the shell is switched to **fish**.
