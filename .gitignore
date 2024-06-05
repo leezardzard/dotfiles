@@ -9,3 +9,5 @@
 .config/bat/*
 .config/configstore/*
 .config/iterm2/*
+.config/atuin/*
+.config/btop/*

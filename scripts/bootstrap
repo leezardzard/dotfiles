@@ -47,6 +47,7 @@ brew install awscli
 brew install kubernetes-cli
 brew tap weaveworks/tap
 brew install weaveworks/tap/eksctl
+brew install btop
 
 ###############################################################################
 # Install iterm2 relative packages
