@@ -1,4 +1,7 @@
 #!/bin/zsh
+
+source ./scripts/utils/homebrew_util.zsh
+
 ###############################################################################
 # Install oh my zsh theme packages
 ###############################################################################
@@ -195,7 +198,7 @@ _fzf_comprun() {
   local command=$1
   shift
 
-  case "$command" in
+  case "$command" i
   cd) fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
   export | unset) fzf --preview "eval 'echo \${}'" "$@" ;;
   ssh) fzf --preview 'dig {}' "$@" ;;
@@ -208,6 +211,8 @@ EOT
 # Install git-delta
 # https://github.com/dandavison/delta
 ###############################################################################
+
+if ! is_package_installed "git-delta" ; then
 brew install git-delta
 cat <<'EOT' >>~/.gitconfig
 [core]
@@ -230,6 +235,7 @@ cat <<'EOT' >>~/.gitconfig
 [diff]
     colorMoved = default
 EOT
+fi
 
 ###############################################################################
 # Install tlrc (better version of man for command help docs)
