@@ -198,7 +198,7 @@ _fzf_comprun() {
   local command=$1
   shift
 
-  case "$command" i
+  case "$command" in
   cd) fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
   export | unset) fzf --preview "eval 'echo \${}'" "$@" ;;
   ssh) fzf --preview 'dig {}' "$@" ;;
@@ -212,9 +212,9 @@ EOT
 # https://github.com/dandavison/delta
 ###############################################################################
 
-if ! is_package_installed "git-delta" ; then
-brew install git-delta
-cat <<'EOT' >>~/.gitconfig
+if ! is_package_installed "git-delta"; then
+  brew install git-delta
+  cat <<'EOT' >>~/.gitconfig
 [core]
     pager = delta
 
