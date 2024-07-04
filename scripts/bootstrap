@@ -80,7 +80,8 @@ brew install nucleo --cask
 brew install postman --cask
 # brew install skype --cask
 brew install slack --cask
-brew install spectacle --cask
+# brew install spectacle --cask
+brew install rectangle --cask
 brew install spotify --cask
 # brew install sourcetree --cask
 brew install tor-browser --cask
