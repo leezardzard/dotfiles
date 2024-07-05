@@ -65,7 +65,8 @@ brew install --cask font-meslo-lg-nerd-font
 ###############################################################################
 echo "Homebrew Cask: installing apps..."
 # brew install 1password --cask
-brew install alfred --cask
+# brew install alfred --cask
+brew install raycast --cask
 brew install figma --cask
 brew install firefox --cask
 # brew install framer-x --cask
