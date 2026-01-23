@@ -19,9 +19,81 @@ fgwt() {
   fi
 }
 
-# cgwt: Create a new git worktree intelligently.
-# Usage: cgwt <branch-name>
+# cgwt: Checkout an existing remote branch and create a worktree for it.
+# Interactively selects a remote branch using fzf.
 cgwt() {
+  # Exit if not in a git repository.
+  if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "❌ Error: Not in a git repository."
+    return 1
+  fi
+
+  # Fetch remote branches to ensure we have the latest list.
+  echo "🔄 Fetching remote branches..."
+  git fetch --all --quiet
+
+  # Get the list of remote branches and display it with fzf for selection.
+  # Remove 'origin/' prefix and filter out HEAD reference
+  local selected_branch=$(git branch -r | grep -v HEAD | sed 's|origin/||' | sed 's|^[[:space:]]*||' | fzf --prompt="Select Remote Branch> " \
+    --header="Select a remote branch to checkout into a new worktree")
+
+  if [[ -z "$selected_branch" ]]; then
+    echo "🔵 Operation cancelled."
+    return 0
+  fi
+
+  # Remove any leading/trailing whitespace
+  selected_branch=$(echo "$selected_branch" | xargs)
+
+  # Check if a worktree for this branch already exists
+  if git worktree list | grep -q "\[$selected_branch\]"; then
+    echo "⚠️  A worktree for branch '$selected_branch' already exists."
+    local existing_path=$(git worktree list | grep "\[$selected_branch\]" | awk '{print $1}')
+    echo "   Path: $existing_path"
+    printf "   Switch to it? (y/n): "
+    read switch_confirm
+    if [[ "$(echo "$switch_confirm" | tr '[:upper:]' '[:lower:]')" == "y" ]]; then
+      cd "$existing_path"
+      echo "✅ Switched to existing worktree: $existing_path"
+      ls -a
+    fi
+    return 0
+  fi
+
+  # Auto-detect paths and names (similar to cgwt)
+  local repo_root=$(git rev-parse --show-toplevel)
+  local repo_name=$(basename "$repo_root")
+  local repo_parent_dir=$(dirname "$repo_root")
+  local new_worktree_path="$repo_parent_dir/$repo_name-$selected_branch"
+
+  echo "🌿 Checking out remote branch '$selected_branch' to new worktree..."
+  echo "   Path: $new_worktree_path"
+
+  # Checkout the remote branch into a new worktree
+  # First ensure the branch exists locally (tracking the remote branch)
+  if ! git rev-parse --verify --quiet "$selected_branch" > /dev/null 2>&1; then
+    # Branch doesn't exist locally, create it tracking the remote
+    git worktree add "$new_worktree_path" -b "$selected_branch" "origin/$selected_branch"
+  else
+    # Branch exists locally, just checkout
+    git worktree add "$new_worktree_path" "$selected_branch"
+  fi
+
+  # Check if the operation was successful
+  if [[ $? -eq 0 ]]; then
+    echo "✅ Success! Worktree created for branch '$selected_branch'."
+    echo "   Switching to: $new_worktree_path"
+    cd "$new_worktree_path"
+    ls -a
+  else
+    echo "⚠️  Operation failed. Please check the error messages."
+    return 1
+  fi
+}
+
+# cngwt: Create a new git worktree intelligently.
+# Usage: cgwt <branch-name>
+cngwt() {
   # --- 1. Argument Check ---
   # Ensure the user has provided a branch name.
   if [[ -z "$1" ]]; then
@@ -66,7 +138,7 @@ cgwt() {
   # Check if the last command was successful.
   if [[ $? -eq 0 ]]; then
     echo "✅ Success! Worktree has been created."
-    echo "   You can now switch to it using 'gwt' or 'cd $new_worktree_path'."
+    echo "   You can now switch to it using 'fgwt' or 'cd $new_worktree_path'."
   else
     echo "⚠️ Operation failed. Please check the error messages."
   fi
