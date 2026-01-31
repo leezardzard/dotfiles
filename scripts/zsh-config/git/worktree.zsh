@@ -53,6 +53,11 @@ _worktree_get_main_path() {
   return 0
 }
 
+# _worktree_branch_to_path_safe: Print branch name with / replaced by - for use in worktree directory paths.
+_worktree_branch_to_path_safe() {
+  echo "${1//\//-}"
+}
+
 # _worktree_relative_path from_dir to_path -> relative path such that from_dir/result == to_path (conceptually).
 _worktree_relative_path() {
   local from_dir="${1:A}" to_path="${2:A}"
@@ -257,7 +262,8 @@ worktree_add_remote_branch() {
   local repo_root=$(_worktree_git rev-parse --show-toplevel)
   local repo_name="${repo_root:t}"
   local repo_parent_dir="${repo_root:h}"
-  local new_worktree_path="$repo_parent_dir/$repo_name-$selected_branch"
+  local path_safe=$(_worktree_branch_to_path_safe "$selected_branch")
+  local new_worktree_path="$repo_parent_dir/$repo_name-$path_safe"
 
   echo "🌿 Checking out remote branch '$selected_branch' to new worktree..."
   echo "   Path: $new_worktree_path"
@@ -325,8 +331,9 @@ worktree_add_branch() {
   # Get the parent directory path of the project.
   local repo_parent_dir="${repo_root:h}"
 
-  # Construct the full path for the new worktree.
-  local new_worktree_path="$repo_parent_dir/$repo_name-$branch_name"
+  # Construct the full path for the new worktree (use path-safe branch name to avoid nested folders).
+  local path_safe=$(_worktree_branch_to_path_safe "$branch_name")
+  local new_worktree_path="$repo_parent_dir/$repo_name-$path_safe"
 
   # --- 3. Intelligently Decide and Execute ---
   echo "Preparing to create a worktree at '$new_worktree_path'..."
