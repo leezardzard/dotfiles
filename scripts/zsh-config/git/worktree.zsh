@@ -58,6 +58,13 @@ _worktree_branch_to_path_safe() {
   echo "${1//\//-}"
 }
 
+# _worktree_default_branch: Print main or master, whichever exists (prefer main). Used as default parent for new branches.
+_worktree_default_branch() {
+  _worktree_git rev-parse --verify --quiet main >/dev/null 2>&1 && { echo main; return }
+  _worktree_git rev-parse --verify --quiet master >/dev/null 2>&1 && { echo master; return }
+  echo main
+}
+
 # _worktree_relative_path from_dir to_path -> relative path such that from_dir/result == to_path (conceptually).
 _worktree_relative_path() {
   local from_dir="${1:A}" to_path="${2:A}"
@@ -306,17 +313,20 @@ worktree_add_remote_branch() {
 }
 
 # worktree_add_branch: Create a new git worktree for a branch (create branch if it doesn't exist).
-# Usage: worktree_add_branch <branch-name>
+# Usage: worktree_add_branch [-p] <branch-name> [parent-branch]
+# Default: create new branch from main (or master). Use -p to fzf-pick parent; or pass parent explicitly.
 worktree_add_branch() {
+  local prompt_parent=0
+  [[ "$1" == -p ]] && { prompt_parent=1; shift }
   # --- 1. Argument Check ---
-  # Ensure the user has provided a branch name.
   if [[ -z "$1" ]]; then
     echo "❌ Error: Branch name is required."
-    echo "Usage: worktree_add_branch <branch-name>"
+    echo "Usage: worktree_add_branch [-p] <branch-name> [parent-branch]"
     return 1
   fi
 
   local branch_name="$1"
+  local parent_branch="$2"
 
   # --- 2. Auto-detect Paths and Names ---
   # Get the absolute path of the Git repository's root directory.
@@ -336,17 +346,48 @@ worktree_add_branch() {
   local new_worktree_path="$repo_parent_dir/$repo_name-$path_safe"
 
   # --- 3. Intelligently Decide and Execute ---
-  echo "Preparing to create a worktree at '$new_worktree_path'..."
-
-  # Check if the branch already exists.
+  # Check if the branch already exists and already has a worktree (one branch = one folder).
   if _worktree_git rev-parse --verify --quiet "$branch_name" > /dev/null; then
-    # Branch already exists, so just check it out into the new worktree.
-    echo "🌿 Branch '$branch_name' already exists. Checking it out to the new worktree."
+    local existing_path
+    existing_path=$(_worktree_git worktree list | awk -v br="$branch_name" '$0 ~ "\\[" br "\\]" { print $1; exit }')
+    if [[ -n "$existing_path" ]]; then
+      echo "🌿 Branch '$branch_name' already has a worktree. Switching to it."
+      cd "$existing_path"
+      echo "✅ Switched to: $existing_path"
+      return 0
+    fi
+    # Branch exists but no worktree (e.g. worktree was removed): create the single worktree for it.
+    echo "Preparing to create a worktree at '$new_worktree_path'..."
+    echo "🌿 Branch '$branch_name' already exists. Creating its worktree."
     _worktree_git worktree add "$new_worktree_path" "$branch_name"
   else
-    # Branch does not exist, so create it and set up the worktree.
-    echo "✨ Creating new branch '$branch_name' and setting up worktree."
-    _worktree_git worktree add "$new_worktree_path" -b "$branch_name"
+    # Branch does not exist: resolve parent (explicit arg, or -p fzf, or default main/master).
+    echo "Preparing to create a worktree at '$new_worktree_path'..."
+    if [[ -n "$parent_branch" ]]; then
+      # Explicit parent given on command line.
+      :
+    elif [[ $prompt_parent -eq 1 ]]; then
+      # -p: interactive pick parent via fzf (local branches).
+      local branch_list
+      branch_list=$(_worktree_git for-each-ref refs/heads --format='%(refname:short)' 2>/dev/null | _worktree_fzf --prompt="Select parent branch for '$branch_name'> " \
+        --header="Choose the branch or commit to create from. ENTER to confirm, ESC to cancel.")
+      [[ -z "$branch_list" ]] && { echo "🔵 Operation cancelled."; return 0; }
+      parent_branch="${branch_list%%[[:space:]]*}"
+    else
+      # Default: use main or master.
+      parent_branch=$(_worktree_default_branch)
+    fi
+    if [[ -n "$parent_branch" ]]; then
+      if ! _worktree_git rev-parse --verify --quiet "$parent_branch" > /dev/null 2>&1; then
+        echo "❌ Error: Parent '$parent_branch' is not a valid branch or commit."
+        return 1
+      fi
+      echo "✨ Creating new branch '$branch_name' from '$parent_branch' and setting up worktree."
+      _worktree_git worktree add "$new_worktree_path" -b "$branch_name" "$parent_branch"
+    else
+      echo "✨ Creating new branch '$branch_name' and setting up worktree."
+      _worktree_git worktree add "$new_worktree_path" -b "$branch_name"
+    fi
   fi
 
   # --- 4. Provide Feedback on the Result ---
@@ -435,16 +476,18 @@ wt - Git worktree switcher (fzf)
 Usage: wt <subcommand> [args]
 
 Subcommands:
-  add <branch>   Add a worktree for a branch (create branch if it doesn't exist).
-  remote         Fzf-pick a remote branch and add a worktree for it.
-  go             Fzf-pick a worktree and cd into it.
-  wl             Initialize whitelist: fzf-pick ignored paths from main worktree, write to .worktree-sync-whitelist.
-  sync           Sync files from main to current worktree using .worktree-sync-whitelist.
-  rm             Fzf-pick a worktree (main/dev excluded) and remove it after confirmation.
-  help           Show this help.
+  add [-p] <branch> [parent]  Add a worktree for a branch. New branch defaults to main/master; use -p to fzf-pick parent.
+  remote                     Fzf-pick a remote branch and add a worktree for it.
+  go                         Fzf-pick a worktree and cd into it.
+  wl                         Initialize whitelist: fzf-pick ignored paths from main worktree, write to .worktree-sync-whitelist.
+  sync                       Sync files from main to current worktree using .worktree-sync-whitelist.
+  rm                         Fzf-pick a worktree (main/dev excluded) and remove it after confirmation.
+  help                       Show this help.
 
 Examples:
   wt add feature-x
+  wt add -p feature-x
+  wt add feature-x develop
   wt remote
   wt go
   wt rm
@@ -452,7 +495,7 @@ EOF
 }
 
 # --- wt: single entry point with short subcommands ---
-# Usage: wt add <branch> | remote | go | wl | sync | rm | help
+# Usage: wt add [-p] <branch> [parent] | remote | go | wl | sync | rm | help
 wt() {
   if [[ -z "$1" ]]; then
     worktree_help
@@ -468,6 +511,6 @@ wt() {
     sync)   worktree_sync_from_whitelist "$@" ;;
     rm)     worktree_remove "$@" ;;
     help|-h|--help) worktree_help ;;
-    *)      echo "Usage: wt add <branch> | remote | go | wl | sync | rm | help" >&2; return 1 ;;
+    *)      echo "Usage: wt add [-p] <branch> [parent] | remote | go | wl | sync | rm | help" >&2; return 1 ;;
   esac
 } 
