@@ -98,6 +98,7 @@ _worktree_sync_symlinks() {
   while IFS= read -r path || [[ -n "$path" ]]; do
     path="${path#"${path%%[![:space:]]*}"}"
     path="${path%"${path##*[![:space:]]}"}"
+    path="${path%/}"
     [[ -z "$path" ]] && continue
     local target="$main_path/$path"
     local link_path="$new_path/$path"
