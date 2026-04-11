@@ -225,6 +225,25 @@ worktree_switch() {
   fi
 }
 
+# worktree_list: Browse worktrees in fzf with a preview pane (git status + recent commits
+# for the highlighted worktree). View-only — use `wt go` to switch. Falls back to plain
+# `git worktree list` when fzf is not installed.
+worktree_list() {
+  if ! _worktree_git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "Not in a git repository."
+    return 1
+  fi
+  if [[ -n "$_WORKTREE_FZF" && -x "$_WORKTREE_FZF" ]]; then
+    local preview_cmd="$_WORKTREE_GIT -C {1} --no-pager status -sb 2>/dev/null; echo; $_WORKTREE_GIT -C {1} --no-pager log --oneline --decorate -10 2>/dev/null"
+    _worktree_git worktree list | _worktree_fzf --prompt="Worktrees> " \
+      --header="View-only. ESC to exit. Use 'wt go' to switch." \
+      --preview="$preview_cmd" \
+      --preview-window=right:60%:wrap > /dev/null
+  else
+    _worktree_git worktree list
+  fi
+}
+
 # worktree_add_remote_branch: Checkout an existing remote branch and create a worktree for it.
 # Interactively selects a remote branch using fzf.
 worktree_add_remote_branch() {
@@ -416,56 +435,111 @@ worktree_add_branch() {
   fi
 }
 
-# worktree_remove: Interactively select and safely REMOVE a git worktree with confirmation.
+# worktree_remove: Interactively select and safely REMOVE one or more git worktrees with confirmation.
 # EXCLUDES main/master/dev/develop branches and the root worktree path from the list.
+# Supports multi-select: TAB to toggle selection, ENTER to confirm.
+# Pass -f / --force to run `git worktree remove --force` (removes dirty/locked worktrees).
 worktree_remove() {
-  # --- 1. Interactively Select the Worktree to Remove ---
-  # Exclude main/master/dev/develop branches and the root worktree path from the list.
+  local force=0
+  while [[ "$1" == -* ]]; do
+    case "$1" in
+      -f|--force) force=1; shift ;;
+      *) echo "Usage: wt rm [-f|--force]" >&2; return 1 ;;
+    esac
+  done
+
+  # --- 1. Interactively Select the Worktree(s) to Remove ---
   local main_path
   main_path=$(_worktree_get_main_path)
-  local selected_line=$(_worktree_git worktree list | grep -vE '\[main\]|\[master\]|\[dev\]|\[develop\]' | awk -v main="$main_path" 'main == "" || $1 != main' | _worktree_fzf --prompt="SELECT WORKTREE TO REMOVE> " \
-    --header="[WARNING] Main/dev and root worktree excluded. Use UP/DOWN to select, ENTER to proceed.")
+  local fzf_prompt="SELECT WORKTREE(S) TO REMOVE> "
+  local fzf_header="[WARNING] Main/dev and root worktree excluded. TAB to multi-select, ENTER to proceed."
+  if (( force )); then
+    fzf_prompt="SELECT WORKTREE(S) TO FORCE-REMOVE> "
+    fzf_header="[FORCE] Will use --force. TAB to multi-select, ENTER to proceed."
+  fi
+  local selected_lines=$(_worktree_git worktree list | grep -vE '\[main\]|\[master\]|\[dev\]|\[develop\]' | awk -v main="$main_path" 'main == "" || $1 != main' | _worktree_fzf --multi --prompt="$fzf_prompt" \
+    --header="$fzf_header")
 
-  if [[ -z "$selected_line" ]]; then
+  if [[ -z "$selected_lines" ]]; then
     echo "🔵 Operation cancelled."
     return 0
   fi
 
-  local worktree_to_remove=$(echo "$selected_line" | awk '{print $1}')
-  local branch_name=$(echo "$selected_line" | awk '{print $2}')
-
-  # --- 2. Core Fool-proofing Mechanism ---
+  # --- 2. Parse selection into parallel arrays and fool-proof against current worktree ---
   local current_worktree=$(_worktree_git rev-parse --show-toplevel)
-  if [[ "$worktree_to_remove" == "$current_worktree" ]]; then
-    echo "❌ Error: You cannot remove the worktree you are currently in."
-    echo "   Path: $current_worktree"
-    return 1
+  local -a paths=() branches=()
+  local line path branch
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    # Use zsh parameter expansion (no awk) so this works in minimal-PATH shells.
+    path="${line%% *}"
+    branch="${line##* }"
+    [[ -z "$path" ]] && continue
+    if [[ "$path" == "$current_worktree" ]]; then
+      echo "❌ Error: You cannot remove the worktree you are currently in."
+      echo "   Path: $current_worktree"
+      return 1
+    fi
+    paths+=("$path")
+    branches+=("$branch")
+  done <<< "$selected_lines"
+
+  if [[ ${#paths[@]} -eq 0 ]]; then
+    echo "🔵 Operation cancelled."
+    return 0
   fi
 
   # --- 3. Yes/No Confirmation Prompt ---
   echo ""
-  echo "������ DANGER ZONE 🔴��🔴"
-  echo "You are about to PERMANENTLY REMOVE the following worktree:"
-  echo "  - Path:   $worktree_to_remove"
-  echo "  - Branch: $branch_name"
+  echo "🔴🔴🔴 DANGER ZONE 🔴🔴🔴"
+  if (( force )); then
+    echo "You are about to FORCE-REMOVE ${#paths[@]} worktree(s) (--force, dirty changes will be lost):"
+  else
+    echo "You are about to PERMANENTLY REMOVE ${#paths[@]} worktree(s):"
+  fi
+  local i
+  for (( i = 1; i <= ${#paths[@]}; i++ )); do
+    echo "  - ${paths[$i]}  ${branches[$i]}"
+  done
   echo ""
 
   printf "Type 'yes' to confirm this action: "
   read confirmation
 
   # --- 4. Execute or Cancel ---
-  if [[ "$(echo "$confirmation" | tr '[:upper:]' '[:lower:]')" == "yes" ]]; then
-    echo "🔥 Removing worktree..."
-    _worktree_git worktree remove "$worktree_to_remove"
-
-    if [[ $? -eq 0 ]]; then
-      echo "✅ Worktree successfully removed."
-    else
-      echo "⚠️ Removal failed. The worktree might contain unsaved changes."
-      echo "   Try running 'git worktree remove --force $worktree_to_remove' manually if you are sure."
-    fi
-  else
+  if [[ "${confirmation:l}" != "yes" ]]; then
     echo "🔵 Operation cancelled by user."
+    return 0
+  fi
+
+  local -a removed=() failed=()
+  echo "🔥 Removing worktree(s)..."
+  for (( i = 1; i <= ${#paths[@]}; i++ )); do
+    if (( force )); then
+      if _worktree_git worktree remove --force "${paths[$i]}"; then
+        removed+=("${paths[$i]} ${branches[$i]}")
+      else
+        failed+=("${paths[$i]} ${branches[$i]}")
+      fi
+    else
+      if _worktree_git worktree remove "${paths[$i]}"; then
+        removed+=("${paths[$i]} ${branches[$i]}")
+      else
+        failed+=("${paths[$i]} ${branches[$i]}")
+      fi
+    fi
+  done
+
+  echo "✅ Removed ${#removed[@]} worktree(s)."
+  if (( ${#failed[@]} > 0 )); then
+    echo "⚠️  Failed: ${#failed[@]}"
+    printf '   - %s\n' "${failed[@]}"
+    if (( force )); then
+      echo "   Even --force failed — check if the worktree is locked ('git worktree unlock <path>')."
+    else
+      echo "   Retry with 'wt rm -f' to force-remove (dirty changes will be lost)."
+    fi
+    return 1
   fi
 }
 
@@ -480,9 +554,10 @@ Subcommands:
   add [-p] <branch> [parent]  Add a worktree for a branch. New branch defaults to main/master; use -p to fzf-pick parent.
   remote                     Fzf-pick a remote branch and add a worktree for it.
   go                         Fzf-pick a worktree and cd into it.
+  ls                         Browse worktrees in fzf with a status/log preview (view-only). Plain list if fzf missing.
   wl                         Initialize whitelist: fzf-pick ignored paths from main worktree, write to .worktree-sync-whitelist.
   sync                       Sync files from main to current worktree using .worktree-sync-whitelist.
-  rm                         Fzf-pick a worktree (main/dev excluded) and remove it after confirmation.
+  rm [-f|--force]            Fzf-pick (TAB for multi-select, main/dev excluded) and remove after confirmation. -f to force.
   help                       Show this help.
 
 Examples:
@@ -491,12 +566,13 @@ Examples:
   wt add feature-x develop
   wt remote
   wt go
+  wt ls
   wt rm
 EOF
 }
 
 # --- wt: single entry point with short subcommands ---
-# Usage: wt add [-p] <branch> [parent] | remote | go | wl | sync | rm | help
+# Usage: wt add [-p] <branch> [parent] | remote | go | ls | wl | sync | rm | help
 wt() {
   if [[ -z "$1" ]]; then
     worktree_help
@@ -508,10 +584,11 @@ wt() {
     add)    worktree_add_branch "$@" ;;
     remote) worktree_add_remote_branch "$@" ;;
     go)     worktree_switch "$@" ;;
+    ls)     worktree_list "$@" ;;
     wl)     worktree_sync_whitelist_from_untracked "$@" ;;
     sync)   worktree_sync_from_whitelist "$@" ;;
     rm)     worktree_remove "$@" ;;
     help|-h|--help) worktree_help ;;
-    *)      echo "Usage: wt add [-p] <branch> [parent] | remote | go | wl | sync | rm | help" >&2; return 1 ;;
+    *)      echo "Usage: wt add [-p] <branch> [parent] | remote | go | ls | wl | sync | rm | help" >&2; return 1 ;;
   esac
 } 
