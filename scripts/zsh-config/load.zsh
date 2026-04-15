@@ -17,6 +17,7 @@ source "$ZSH_CONFIG_DIR/tools/fd.zsh"
 source "$ZSH_CONFIG_DIR/tools/fzf-git.zsh"
 source "$ZSH_CONFIG_DIR/tools/fzf-preview.zsh"
 source "$ZSH_CONFIG_DIR/tools/thefuck.zsh"
+source "$ZSH_CONFIG_DIR/tools/claude-switch.zsh"
 
 # Load development tools
 source "$ZSH_CONFIG_DIR/development/nvm.zsh"
