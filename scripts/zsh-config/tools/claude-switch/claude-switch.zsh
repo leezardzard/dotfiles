@@ -281,6 +281,103 @@ claude_switch_default() {
   echo "   Will auto-load on next terminal startup."
 }
 
+# --- Desktop helpers ---
+
+# _cs_desktop_data_dir: Print the configured --user-data-dir for a profile.
+# Empty result means "use the default data dir" (primary/work account).
+_cs_desktop_data_dir() {
+  local file="$_CS_PROFILES_DIR/$1/.desktop-data-dir"
+  [[ -f "$file" ]] && cat "$file"
+}
+
+# claude_switch_desktop: Open Claude Desktop for a profile. Fzf picker if no name given.
+claude_switch_desktop() {
+  local name="$1"
+
+  if [[ -z "$name" ]]; then
+    if [[ ! -d "$_CS_PROFILES_DIR" ]] || [[ -z "$(/bin/ls -A "$_CS_PROFILES_DIR" 2>/dev/null)" ]]; then
+      echo "❌ No profiles found. Create one first with: cs add <name>"
+      return 1
+    fi
+
+    local preview_cmd
+    preview_cmd="f(){ dir=\$(cat $_CS_PROFILES_DIR/{1}/.desktop-data-dir 2>/dev/null); echo \"Data dir: \${dir:-(default)}\"; }; f"
+
+    local selected
+    selected=$(_cs_list_profiles | _cs_fzf \
+      --prompt="Open Claude Desktop> " \
+      --header="ENTER to open, ESC to cancel." \
+      --preview="$preview_cmd" \
+      --preview-window=right:40%:wrap \
+      | awk '{print $1}')
+
+    [[ -z "$selected" ]] && return 0
+    name="$selected"
+  fi
+
+  if ! _cs_profile_exists "$name"; then
+    echo "❌ Profile '$name' not found at $_CS_PROFILES_DIR/$name"
+    return 1
+  fi
+
+  local data_dir
+  data_dir=$(_cs_desktop_data_dir "$name")
+
+  if [[ -n "$data_dir" ]]; then
+    open -n -a "Claude" --args --user-data-dir="$data_dir" 2>/dev/null \
+      || { echo "❌ Could not open Claude.app"; return 1; }
+    echo "✅ Opened Claude Desktop (profile: $name)"
+  else
+    open -a "Claude" 2>/dev/null \
+      || { echo "❌ Could not open Claude.app"; return 1; }
+    echo "✅ Opened Claude Desktop (profile: $name)"
+  fi
+}
+
+# claude_switch_desktop_set: Configure the --user-data-dir for a profile's Desktop instance.
+# Usage: cs desktop set <profile> [data-dir]
+# If data-dir is omitted, defaults to ~/Library/Application Support/Claude-<profile>.
+# Use --default to mark a profile as the primary account (no --user-data-dir).
+claude_switch_desktop_set() {
+  local name="$1" data_dir="${2:-}"
+
+  if [[ -z "$name" ]]; then
+    echo "❌ Profile name is required."
+    echo "Usage: cs desktop set <profile> [data-dir|--default]"
+    return 1
+  fi
+
+  if ! _cs_profile_exists "$name"; then
+    echo "❌ Profile '$name' not found at $_CS_PROFILES_DIR/$name"
+    return 1
+  fi
+
+  if [[ "$data_dir" == "--default" ]]; then
+    rm -f "$_CS_PROFILES_DIR/$name/.desktop-data-dir"
+    echo "✅ '$name' will open the default Claude Desktop (primary account)."
+    return 0
+  fi
+
+  if [[ -z "$data_dir" ]]; then
+    data_dir="$HOME/Library/Application Support/Claude-$name"
+  fi
+
+  data_dir="${data_dir/#\~/$HOME}"
+  echo "$data_dir" > "$_CS_PROFILES_DIR/$name/.desktop-data-dir"
+  echo "✅ Desktop data dir for '$name': $data_dir"
+  echo "   Open with: cs desktop $name"
+}
+
+# claude_switch_desktop_dispatch: Route cs desktop subcommands.
+claude_switch_desktop_dispatch() {
+  local sub="${1:-}"
+  case "$sub" in
+    set) shift; claude_switch_desktop_set "$@" ;;
+    "")  claude_switch_desktop ;;
+    *)   claude_switch_desktop "$sub" ;;
+  esac
+}
+
 # claude_switch_help: Print usage.
 claude_switch_help() {
   cat <<'EOF'
@@ -296,6 +393,9 @@ Subcommands:
   mv <src> <dest>     Rename a profile. Use -c/--clone to copy instead.
   default [name]      Get or set the default profile for new terminals.
   default --clear     Clear the default profile.
+  desktop [name]           Open Claude Desktop for a profile. Fzf picker if no name.
+  desktop set <n> [dir]    Set the --user-data-dir for a profile (default: ~/Library/Application Support/Claude-<name>).
+  desktop set <n> --default  Mark profile as the primary account (opens default Claude.app).
   help                Show this help.
 
 Any unrecognized subcommand is treated as a profile name:
@@ -305,6 +405,7 @@ Directory layout (~/.claude-profiles/):
   <profile>/
     .claude/         Config directory (CLAUDE_CONFIG_DIR)
     .claude.json     Auth/credentials (symlinked to ~/.claude.json)
+    .desktop-data-dir  --user-data-dir for cs desktop (optional; absent = primary account)
 
 Setup:
   cs add personal
@@ -312,6 +413,11 @@ Setup:
   cp ~/.claude.json ~/.claude-profiles/personal/.claude.json
   cs add work
   cs personal       # switch to personal profile
+
+Desktop setup:
+  cs desktop set work --default     # work = primary account (no --user-data-dir)
+  cs desktop set personal           # personal = ~/Library/Application Support/Claude-personal
+  cs desktop                        # fzf picker to open a Desktop instance
 EOF
 }
 
@@ -328,6 +434,7 @@ cs() {
     add)     claude_switch_add "$@" ;;
     mv)      claude_switch_mv "$@" ;;
     default) claude_switch_default "$@" ;;
+    desktop) claude_switch_desktop_dispatch "$@" ;;
     help|-h|--help) claude_switch_help ;;
     *)       claude_switch_go "$cmd" ;;
   esac
