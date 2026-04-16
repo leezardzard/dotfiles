@@ -328,7 +328,7 @@ claude_switch_desktop() {
       || { echo "❌ Could not open Claude.app"; return 1; }
     echo "✅ Opened Claude Desktop (profile: $name)"
   else
-    open -a "Claude" 2>/dev/null \
+    open -n -a "Claude" 2>/dev/null \
       || { echo "❌ Could not open Claude.app"; return 1; }
     echo "✅ Opened Claude Desktop (profile: $name)"
   fi
