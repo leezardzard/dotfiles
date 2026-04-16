@@ -20,6 +20,8 @@ _CS_PROFILES_DIR="$HOME/.claude-profiles"
 
 # --- Private helpers ---
 
+_CS_DEFAULT_FILE="$_CS_PROFILES_DIR/.default"
+
 # _cs_active_profile: Print the name of the currently active profile (or empty string).
 # Detection: check ~/.claude.json symlink target, then fall back to CLAUDE_CONFIG_DIR.
 _cs_active_profile() {
@@ -47,6 +49,30 @@ _cs_active_profile() {
 # _cs_profile_exists: Return 0 if profile directory exists.
 _cs_profile_exists() {
   [[ -d "$_CS_PROFILES_DIR/$1" ]]
+}
+
+# _cs_apply_profile: Apply a profile silently without interactive prompts.
+_cs_apply_profile() {
+  local name="$1"
+  if ! _cs_profile_exists "$name"; then
+    echo "cs: default profile '$name' not found, skipping." >&2
+    return 1
+  fi
+  export CLAUDE_CONFIG_DIR="$_CS_PROFILES_DIR/$name/.claude"
+  ln -sf "$_CS_PROFILES_DIR/$name/.claude.json" "$HOME/.claude.json"
+}
+
+# _cs_autoload_default: Apply the default profile on shell startup if none is active.
+_cs_autoload_default() {
+  # Skip if a profile is already active in this shell
+  [[ -n "$CLAUDE_CONFIG_DIR" ]] && return 0
+  [[ -f "$_CS_DEFAULT_FILE" ]] || return 0
+
+  local default_profile
+  default_profile=$(< "$_CS_DEFAULT_FILE")
+  [[ -z "$default_profile" ]] && return 0
+
+  _cs_apply_profile "$default_profile"
 }
 
 # _cs_list_profiles: Print profile names, one per line, with (active) marker.
@@ -223,6 +249,38 @@ claude_switch_mv() {
   fi
 }
 
+# claude_switch_default: Get or set the default profile loaded on new terminal windows.
+# Usage: cs default [name|--clear]
+claude_switch_default() {
+  local name="$1"
+
+  if [[ "$name" == "--clear" || "$name" == "-c" ]]; then
+    rm -f "$_CS_DEFAULT_FILE"
+    echo "✅ Default profile cleared."
+    return 0
+  fi
+
+  if [[ -z "$name" ]]; then
+    if [[ -f "$_CS_DEFAULT_FILE" ]]; then
+      local current_default
+      current_default=$(< "$_CS_DEFAULT_FILE")
+      echo "Default profile: $current_default"
+    else
+      echo "No default profile set. Use: cs default <name>"
+    fi
+    return 0
+  fi
+
+  if ! _cs_profile_exists "$name"; then
+    echo "❌ Profile '$name' not found at $_CS_PROFILES_DIR/$name"
+    return 1
+  fi
+
+  echo "$name" > "$_CS_DEFAULT_FILE"
+  echo "✅ Default profile set to: $name"
+  echo "   Will auto-load on next terminal startup."
+}
+
 # claude_switch_help: Print usage.
 claude_switch_help() {
   cat <<'EOF'
@@ -231,12 +289,14 @@ cs - Claude Code Profile Switcher (fzf)
 Usage: cs [subcommand|profile-name] [args]
 
 Subcommands:
-  (none)          Interactive fzf picker to switch profiles.
-  go [name]       Switch to a profile. Fzf picker if no name given.
-  ls              Browse profiles in fzf with preview (view-only).
-  add <name>      Create a new empty profile.
-  mv <src> <dest> Rename a profile. Use -c/--clone to copy instead.
-  help            Show this help.
+  (none)              Interactive fzf picker to switch profiles.
+  go [name]           Switch to a profile. Fzf picker if no name given.
+  ls                  Browse profiles in fzf with preview (view-only).
+  add <name>          Create a new empty profile.
+  mv <src> <dest>     Rename a profile. Use -c/--clone to copy instead.
+  default [name]      Get or set the default profile for new terminals.
+  default --clear     Clear the default profile.
+  help                Show this help.
 
 Any unrecognized subcommand is treated as a profile name:
   cs work         → same as cs go work
@@ -263,11 +323,15 @@ cs() {
   fi
   local cmd="$1"; shift
   case "$cmd" in
-    go)     claude_switch_go "$@" ;;
-    ls)     claude_switch_list "$@" ;;
-    add)    claude_switch_add "$@" ;;
-    mv)     claude_switch_mv "$@" ;;
+    go)      claude_switch_go "$@" ;;
+    ls)      claude_switch_list "$@" ;;
+    add)     claude_switch_add "$@" ;;
+    mv)      claude_switch_mv "$@" ;;
+    default) claude_switch_default "$@" ;;
     help|-h|--help) claude_switch_help ;;
-    *)      claude_switch_go "$cmd" ;;
+    *)       claude_switch_go "$cmd" ;;
   esac
 }
+
+# Auto-apply default profile when this script is sourced (new terminal window).
+_cs_autoload_default
