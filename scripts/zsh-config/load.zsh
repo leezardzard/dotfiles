@@ -20,7 +20,7 @@ source "$ZSH_CONFIG_DIR/tools/thefuck.zsh"
 source "$ZSH_CONFIG_DIR/tools/claude-switch/claude-switch.zsh"
 
 # Load development tools
-source "$ZSH_CONFIG_DIR/development/nvm.zsh"
+source "$ZSH_CONFIG_DIR/development/fnm.zsh"
 source "$ZSH_CONFIG_DIR/development/go.zsh"
 
 # Load git tools
