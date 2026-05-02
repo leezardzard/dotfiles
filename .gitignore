@@ -16,3 +16,4 @@
 .config/raycast/*
 .config/git/*
 .config/yarn/*
+.config/gh/*
