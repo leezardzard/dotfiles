@@ -285,10 +285,16 @@ worktree_add_remote_branch() {
     return 0
   fi
 
-  # Auto-detect paths and names (similar to worktree_add_branch)
+  # Auto-detect paths and names (similar to worktree_add_branch).
+  # Anchor on the MAIN worktree so nested creation doesn't compound names
+  # (<repo>-B, not <repo>-A-B). Fall back to current worktree if no main found.
   local repo_root=$(_worktree_git rev-parse --show-toplevel)
-  local repo_name="${repo_root:t}"
-  local repo_parent_dir="${repo_root:h}"
+  local anchor_path
+  anchor_path=$(_worktree_get_main_path)
+  anchor_path="${anchor_path%%[[:space:]]*}"
+  [[ -z "$anchor_path" ]] && anchor_path="$repo_root"
+  local repo_name="${anchor_path:t}"
+  local repo_parent_dir="${anchor_path:h}"
   local path_safe=$(_worktree_branch_to_path_safe "$selected_branch")
   local new_worktree_path="$repo_parent_dir/$repo_name-$path_safe"
 
@@ -356,10 +362,18 @@ worktree_add_branch() {
     return 1
   fi
 
-  # Get the project folder name from the root path.
-  local repo_name="${repo_root:t}"
+  # Anchor new worktree paths on the MAIN worktree, not the current one, so
+  # creating branch B from inside worktree A yields <repo>-B, not <repo>-A-B.
+  # Fall back to the current worktree when no main/master worktree is found.
+  local anchor_path
+  anchor_path=$(_worktree_get_main_path)
+  anchor_path="${anchor_path%%[[:space:]]*}"
+  [[ -z "$anchor_path" ]] && anchor_path="$repo_root"
+
+  # Get the project folder name from the anchor path.
+  local repo_name="${anchor_path:t}"
   # Get the parent directory path of the project.
-  local repo_parent_dir="${repo_root:h}"
+  local repo_parent_dir="${anchor_path:h}"
 
   # Construct the full path for the new worktree (use path-safe branch name to avoid nested folders).
   local path_safe=$(_worktree_branch_to_path_safe "$branch_name")
