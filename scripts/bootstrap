@@ -38,16 +38,26 @@ brew install imagemagick
 # brew install mackup
 brew install mas
 # brew install nginx
-brew install node
+# node is managed by fnm (see scripts/zsh-config/development/fnm.zsh);
+# fnm is installed below — do not `brew install node` (unmanaged conflict).
 brew install rename
 brew install tree
 brew install webkit2png
-brew install lerna
 brew install awscli
 brew install kubernetes-cli
 brew tap weaveworks/tap
 brew install weaveworks/tap/eksctl
 brew install btop
+
+###############################################################################
+# Install fnm (fast Node manager) + a default LTS Node
+###############################################################################
+# bootstrap runs as /bin/sh, so load fnm's env before using it in this script.
+echo "Homebrew: installing fnm and a default Node..."
+brew install fnm
+eval "$(fnm env --corepack-enabled)"
+fnm install --lts
+fnm default lts-latest
 
 ###############################################################################
 # Install iterm2 relative packages
