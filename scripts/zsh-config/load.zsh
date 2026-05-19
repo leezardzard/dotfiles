@@ -8,7 +8,6 @@ source "$ZSH_CONFIG_DIR/keybindings/bindkey.zsh"
 
 # Load tools
 source "$ZSH_CONFIG_DIR/tools/bat.zsh"
-source "$ZSH_CONFIG_DIR/tools/zoxide.zsh"
 source "$ZSH_CONFIG_DIR/tools/eza.zsh"
 source "$ZSH_CONFIG_DIR/tools/dust.zsh"
 source "$ZSH_CONFIG_DIR/tools/atuin.zsh"
@@ -27,4 +26,8 @@ source "$ZSH_CONFIG_DIR/development/go.zsh"
 source "$ZSH_CONFIG_DIR/git/worktree.zsh"
 
 # Load utilities
-source "$ZSH_CONFIG_DIR/utilities/ffmpeg.zsh" 
+source "$ZSH_CONFIG_DIR/utilities/ffmpeg.zsh"
+
+# zoxide must be initialized last so its precmd/chpwd hooks are registered
+# after every other tool's hooks (zoxide doctor warns otherwise).
+source "$ZSH_CONFIG_DIR/tools/zoxide.zsh"
