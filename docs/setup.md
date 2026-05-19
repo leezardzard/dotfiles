@@ -61,7 +61,7 @@ Comment or uncomment lines in `scripts/bootstrap` to skip or add packages (e.g. 
 3. **Zsh plugins** — Installs and sources zsh-autosuggestions via Homebrew.
 4. **Tools** — Installs bat, zoxide, eza, dust, atuin, fzf, fd; clones `fzf-git.sh` to `~/fzf-git.sh` if missing.
 5. **Git** — If git-delta not installed: installs it and copies `scripts/zsh-config/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
-6. **Other** — tlrc, thefuck, nvm (+ `~/.nvm`), go.
+6. **Other** — tlrc, thefuck, fnm, go.
 7. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.
 8. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/scripts/zsh-config/load.zsh`.
 

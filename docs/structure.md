@@ -18,7 +18,7 @@ Directory layout and what each part does.
 |------|-------------|
 | `bootstrap` | System bootstrap: Xcode CLI, Homebrew, CLI packages, casks, Docker, Kubernetes-related tools, mas apps. |
 | `bootstrap-zsh.sh` | Installs zsh, sets default shell, installs Oh My Zsh. |
-| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, nvm, go; appends `source .../load.zsh` to `~/.zshrc`. |
+| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, fnm, go; appends `source .../load.zsh` to `~/.zshrc`. |
 | `utils/homebrew_util.zsh` | Helper `is_package_installed` for Homebrew; used by bootstrap. |
 | `zsh-config/` | Modular Zsh config; entry point is `load.zsh`. |
 
@@ -30,7 +30,7 @@ Directory layout and what each part does.
 | `keybindings/bindkey.zsh` | Custom keybindings. |
 | `tools/` | Tool configs and aliases: bat, zoxide (`cd` → `z`), eza (`ls`), dust (`df`), atuin, fzf, fd, fzf-git, fzf-preview, thefuck. |
 | `development/go.zsh` | Go environment. |
-| `development/nvm.zsh` | NVM (Node) setup. |
+| `development/fnm.zsh` | fnm (fast Node manager) setup. |
 | `git/gitconfig` | Delta pager config; copied to `~/.gitconfig` when git-delta is first installed. |
 | `git/worktree.zsh` | **wt** — fzf-based Git worktree commands (`wt add`, `wt go`, `wt remote`, `wt sync`, `wt rm`, etc.). |
 | `utilities/ffmpeg.zsh` | FFmpeg-related helpers. |

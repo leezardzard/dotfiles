@@ -101,10 +101,10 @@ brew install tlrc
 brew install thefuck
 
 ###############################################################################
-# Install Node relative packages
+# Install fnm (fast Node manager)
+# https://github.com/Schniz/fnm
 ###############################################################################
-brew install nvm
-mkdir ~/.nvm
+brew install fnm
 
 ###############################################################################
 # Install go
