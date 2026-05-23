@@ -1,6 +1,7 @@
 # everyday GUI apps
 cask "raycast"
 cask "rectangle"
+cask "caffeine"
 cask "google-chrome"
 cask "firefox"
 cask "slack"

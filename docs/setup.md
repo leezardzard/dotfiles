@@ -46,9 +46,9 @@ The first run will also (when missing) prompt for **Xcode Command Line Tools** a
 | `cloud` | awscli, kubernetes-cli, kind, eksctl (Weaveworks tap) |
 | `docker` | docker cask, docker-compose, and CLI plugin symlink under `~/.docker/cli-plugins/` |
 | `terminal` | iTerm2, cmux, Hack Nerd Font, Meslo LG Nerd Font |
-| `apps-daily` | Raycast, Rectangle, Chrome, Firefox, Slack, Notion, Spotify, GitHub |
+| `apps-daily` | Raycast, Rectangle, Caffeine, Chrome, Firefox, Slack, Notion, Spotify, GitHub |
 | `apps-dev` | VS Code, Postman, ngrok, Robo 3T, Altair GraphQL Client, Figma, Nucleo, ImageOptim, Transmit, Tor Browser |
-| `mas` | Mac App Store: Xcode (497799835), Line (539883307), Amphetamine (937984704) — requires a signed-in App Store |
+| `mas` | Mac App Store: Xcode (497799835), Line (539883307) — requires a signed-in App Store |
 
 To add or remove a package, edit the relevant `scripts/brewfiles/Brewfile.<category>`. To add a whole new category, drop a new `Brewfile.<name>` in that directory and append the name to `CATEGORIES` in `scripts/bootstrap`.
 
