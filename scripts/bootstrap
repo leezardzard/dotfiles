@@ -48,6 +48,7 @@ brew install kubernetes-cli
 brew tap weaveworks/tap
 brew install weaveworks/tap/eksctl
 brew install btop
+brew install fresh-editor
 
 ###############################################################################
 # Install fnm (fast Node manager) + a default LTS Node
@@ -63,6 +64,7 @@ fnm default lts-latest
 # Install iterm2 relative packages
 ###############################################################################
 brew install iterm2 --cask
+brew install --cask cmux
 brew tap homebrew/cask-fonts
 
 # Note: you can use this commnad to find the favorite fonts
