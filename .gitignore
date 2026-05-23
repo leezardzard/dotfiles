@@ -2,3 +2,10 @@
 
 .config/**
 !.config/nvim/
+!.config/fresh/
+!.config/fresh/init.ts
+!.config/fresh/tsconfig.json
+!.config/fresh/types/
+!.config/fresh/types/**
+!.config/fresh/themes/
+!.config/fresh/themes/**
