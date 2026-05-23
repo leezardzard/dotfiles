@@ -1,19 +1,4 @@
 .DS_Store
 
-.config/fish/completions/*
-.config/fish/conf.d/*
-.config/fish/functions/*
-.config/fish/fish_variables
-.config/fish/fish_plugins
-.config/fish/fishd.*
-
-.config/thefuck/*
-.config/bat/*
-.config/configstore/*
-.config/iterm2/*
-.config/atuin/*
-.config/btop/*
-.config/raycast/*
-.config/git/*
-.config/yarn/*
-.config/gh/*
+.config/**
+!.config/nvim/
