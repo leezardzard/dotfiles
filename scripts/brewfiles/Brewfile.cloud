@@ -1,0 +1,7 @@
+# cloud / kubernetes CLIs
+tap "weaveworks/tap"
+
+brew "awscli"
+brew "kubernetes-cli"
+brew "kind"
+brew "weaveworks/tap/eksctl"

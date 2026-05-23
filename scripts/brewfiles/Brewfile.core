@@ -1,0 +1,11 @@
+# core CLI tools — installed by default
+brew "ffmpeg"
+brew "git"
+brew "httpie"
+brew "imagemagick"
+brew "mas"
+brew "rename"
+brew "tree"
+brew "webkit2png"
+brew "btop"
+brew "fresh-editor"

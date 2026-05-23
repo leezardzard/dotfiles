@@ -1,0 +1,11 @@
+# developer-oriented GUI apps
+cask "visual-studio-code"
+cask "postman"
+cask "ngrok"
+cask "robo-3t"
+cask "altair-graphql-client"
+cask "figma"
+cask "nucleo"
+cask "imageoptim"
+cask "transmit"
+cask "tor-browser"

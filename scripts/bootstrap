@@ -1,135 +1,185 @@
-#!/bin/sh
+#!/usr/bin/env bash
+#
+# Bootstrap orchestrator — installs system + Homebrew packages by category.
+# Package lists live in scripts/brewfiles/Brewfile.<category>.
+#
+# Run `./scripts/bootstrap help` for usage.
 
-###############################################################################
-# Install Xcode command line tools
-###############################################################################
-echo "Installing Xcode Command Line Tools..."
-xcode-select --install
+set -euo pipefail
 
-###############################################################################
-# Check for Homebrew, else install
-###############################################################################
-echo "Checking for, or Installing Homebrew..."
-if [ -z $(command -v brew) ]; then
-    echo "Brew is missing! Installing it..."
-    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BREWFILE_DIR="$SCRIPT_DIR/brewfiles"
 
-###############################################################################
-# Make sure we're on latest Homebrew
-###############################################################################
-echo "Homebrew: updating..."
-brew update
+# Category order = install order. Matters because:
+#   - `mas` formula (from core) must exist before Brewfile.mas runs
+#   - `fnm` must install before its post-hook installs LTS Node
+CATEGORIES="core node cloud docker terminal apps-daily apps-dev mas"
 
-###############################################################################
-# Upgrade any already-installed formulae
-###############################################################################
-echo "Homebrew: upgrading..."
-brew upgrade
+category_desc() {
+  case "$1" in
+    core)       echo "CLI essentials (git, mas, fresh-editor, btop, ...)" ;;
+    node)       echo "fnm + default LTS Node (via post-hook)" ;;
+    cloud)      echo "awscli, kubectl, kind, eksctl" ;;
+    docker)     echo "docker cask + compose (symlinks CLI plugin)" ;;
+    terminal)   echo "iTerm2, cmux, Nerd fonts" ;;
+    apps-daily) echo "raycast, chrome, slack, notion, ..." ;;
+    apps-dev)   echo "vscode, postman, figma, ..." ;;
+    mas)        echo "Mac App Store apps (Xcode, Line, Amphetamine)" ;;
+    *)          echo "" ;;
+  esac
+}
 
-###############################################################################
-# Install binaries and other packages
-###############################################################################
-echo "Homebrew: installing packages..."
-brew install ffmpeg
-brew install git
-brew install httpie
-brew install imagemagick
-# brew install mackup
-brew install mas
-# brew install nginx
-# node is managed by fnm (see scripts/zsh-config/development/fnm.zsh);
-# fnm is installed below — do not `brew install node` (unmanaged conflict).
-brew install rename
-brew install tree
-brew install webkit2png
-brew install awscli
-brew install kubernetes-cli
-brew tap weaveworks/tap
-brew install weaveworks/tap/eksctl
-brew install btop
-brew install fresh-editor
+usage() {
+  cat <<EOF
+Usage: ./scripts/bootstrap <command> [args...]
 
-###############################################################################
-# Install fnm (fast Node manager) + a default LTS Node
-###############################################################################
-# bootstrap runs as /bin/sh, so load fnm's env before using it in this script.
-echo "Homebrew: installing fnm and a default Node..."
-brew install fnm
-eval "$(fnm env --corepack-enabled)"
-fnm install --lts
-fnm default lts-latest
+Commands:
+  install [category...]   Install all categories (default) or only the named ones.
+  list                    Show available categories.
+  doctor  [category...]   Report missing Brewfile entries per category.
+  update                  Explicit: brew update && brew upgrade.
 
-###############################################################################
-# Install iterm2 relative packages
-###############################################################################
-brew install iterm2 --cask
-brew install --cask cmux
-brew tap homebrew/cask-fonts
+Examples:
+  ./scripts/bootstrap                              # install everything
+  ./scripts/bootstrap install core node docker     # install a subset
+  ./scripts/bootstrap doctor terminal              # check one category
 
-# Note: you can use this commnad to find the favorite fonts
-# > brew search --cask nerd
-brew install --cask font-hack-nerd-font
-brew install --cask font-meslo-lg-nerd-font
+Categories: $CATEGORIES
+EOF
+}
 
-###############################################################################
-# Install applications with Homebrew Cask
-###############################################################################
-echo "Homebrew Cask: installing apps..."
-# brew install 1password --cask
-# brew install alfred --cask
-brew install raycast --cask
-brew install figma --cask
-brew install firefox --cask
-# brew install framer-x --cask
-brew install github --cask
-brew install google-chrome --cask
-# brew install hyper --cask
-brew install imageoptim --cask
-# brew install iina --cask
+# preflight ----------------------------------------------------------------
 
-brew install notion --cask
-brew install nucleo --cask
-brew install postman --cask
-# brew install skype --cask
-brew install slack --cask
-# brew install spectacle --cask
-brew install rectangle --cask
-brew install spotify --cask
-# brew install sourcetree --cask
-brew install tor-browser --cask
-brew install transmit --cask
-# brew install tunnelbear --cask
-brew install visual-studio-code --cask
-# brew install whatsapp --cask
-# brew install espanso --cask
-# brew install via --cask
-brew install ngrok --cask
-brew install robo-3t --cask
-brew install altair-graphql-client --cask
+ensure_xcode_clt() {
+  if ! xcode-select -p >/dev/null 2>&1; then
+    echo "==> Xcode Command Line Tools not detected; running xcode-select --install"
+    xcode-select --install
+    echo "    Re-run this script after the install dialog completes."
+    exit 1
+  fi
+}
 
-###############################################################################
-# Install docker relative packages
-###############################################################################
-brew install docker --cask
-brew install docker-compose
-mkdir -p ~/.docker/cli-plugins
-ln -sfn /opt/homebrew/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
+ensure_homebrew() {
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "==> Homebrew missing; installing"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+}
 
-###############################################################################
-# Install minikube relative packages
-###############################################################################
-mas install 497799835 # Xcode
-brew install kubectl
-brew install kind
+# post-hooks ---------------------------------------------------------------
 
-###############################################################################
-# Install applications with mas-cli (Mac App Store CLI)
-###############################################################################
-echo "mas-cli: installing Mac App Store apps..."
-# Line
-mas install 539883307
-# Amphetamine
-mas install 937984704
+_post_node() {
+  echo "==> fnm: installing default LTS Node"
+  eval "$(fnm env --corepack-enabled)"
+  fnm install --lts
+  fnm default lts-latest
+}
 
-echo "macOS Config, Dev Tools, Apps are Done Setup!"
+_post_docker() {
+  echo "==> docker: symlinking compose CLI plugin"
+  mkdir -p "$HOME/.docker/cli-plugins"
+  ln -sfn /opt/homebrew/opt/docker-compose/bin/docker-compose \
+    "$HOME/.docker/cli-plugins/docker-compose"
+}
+
+run_post_hook() {
+  case "$1" in
+    node)   _post_node ;;
+    docker) _post_docker ;;
+  esac
+}
+
+# helpers ------------------------------------------------------------------
+
+valid_category() {
+  for c in $CATEGORIES; do
+    [ "$c" = "$1" ] && return 0
+  done
+  return 1
+}
+
+# Resolve user args -> canonical install order. With no args, returns all.
+resolve_categories() {
+  if [ "$#" -eq 0 ]; then
+    echo "$CATEGORIES"
+    return
+  fi
+  for cat in "$@"; do
+    if ! valid_category "$cat"; then
+      echo "error: unknown category '$cat' (run: ./scripts/bootstrap list)" >&2
+      exit 2
+    fi
+  done
+  out=""
+  for c in $CATEGORIES; do
+    for given in "$@"; do
+      if [ "$c" = "$given" ]; then
+        out="$out $c"
+        break
+      fi
+    done
+  done
+  echo "$out"
+}
+
+# commands -----------------------------------------------------------------
+
+cmd_install() {
+  ensure_xcode_clt
+  ensure_homebrew
+
+  cats=$(resolve_categories "$@")
+  for cat in $cats; do
+    file="$BREWFILE_DIR/Brewfile.$cat"
+    echo
+    echo "==> [$cat] brew bundle install --file=$file"
+    brew bundle install --file="$file"
+    run_post_hook "$cat"
+  done
+
+  echo
+  echo "Done. Run \`./scripts/bootstrap update\` to refresh and upgrade installed packages."
+}
+
+cmd_list() {
+  for cat in $CATEGORIES; do
+    printf '  %-12s %s\n' "$cat" "$(category_desc "$cat")"
+  done
+}
+
+cmd_doctor() {
+  cats=$(resolve_categories "$@")
+  for cat in $cats; do
+    echo "==> [$cat]"
+    brew bundle check --verbose --file="$BREWFILE_DIR/Brewfile.$cat" || true
+  done
+}
+
+cmd_update() {
+  ensure_homebrew
+  echo "==> brew update"
+  brew update
+  echo "==> brew upgrade"
+  brew upgrade
+}
+
+# dispatch -----------------------------------------------------------------
+
+main() {
+  cmd="${1:-install}"
+  if [ "$#" -gt 0 ]; then shift; fi
+  case "$cmd" in
+    install)        cmd_install "$@" ;;
+    list)           cmd_list ;;
+    doctor)         cmd_doctor "$@" ;;
+    update)         cmd_update ;;
+    -h|--help|help) usage ;;
+    *)
+      echo "error: unknown command '$cmd'" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"

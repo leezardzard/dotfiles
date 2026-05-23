@@ -1,0 +1,5 @@
+# terminal: emulators, multiplexers, and fonts
+cask "iterm2"
+cask "cmux"
+cask "font-hack-nerd-font"
+cask "font-meslo-lg-nerd-font"

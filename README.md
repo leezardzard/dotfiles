@@ -31,8 +31,12 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
 2. **Install system and Homebrew packages:**
 
    ```shell
-   ./scripts/bootstrap
+   ./scripts/bootstrap                              # everything
+   ./scripts/bootstrap install core node docker     # or a subset
+   ./scripts/bootstrap list                         # see categories
    ```
+
+   Package lists live in `scripts/brewfiles/Brewfile.<category>`.
 
 3. **Install Zsh and shell-related packages:**
 
@@ -49,7 +53,7 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
    ./scripts/bootstrap-zshrc.zsh
    ```
 
-To customize the prompt, run `p10k configure`. To add or remove packages, edit `scripts/bootstrap` and `scripts/bootstrap-zshrc.zsh`.
+To customize the prompt, run `p10k configure`. To add or remove packages, edit the relevant `scripts/brewfiles/Brewfile.<category>` (or `scripts/bootstrap-zshrc.zsh` for shell tools).
 
 ## Project structure
 

@@ -1,0 +1,9 @@
+# everyday GUI apps
+cask "raycast"
+cask "rectangle"
+cask "google-chrome"
+cask "firefox"
+cask "slack"
+cask "notion"
+cask "spotify"
+cask "github"

@@ -5,7 +5,7 @@ Step-by-step install and what each script does.
 ## Overview
 
 1. **Clone** the repo to `~/.dotfiles` and `cd` into it.
-2. **`./scripts/bootstrap`** — system and Homebrew (Xcode CLI, brew, packages, casks).
+2. **`./scripts/bootstrap`** — system and Homebrew (Xcode CLI, brew, packages, casks). Backed by per-category Brewfiles in `scripts/brewfiles/`.
 3. **`./scripts/bootstrap.zsh`** (or `bootstrap-zsh.sh` then `bootstrap-zshrc.zsh`) — Zsh, Oh My Zsh, theme, tools, and dotfiles wiring.
 
 Optional: symlink Neovim config and use tmux configs as needed.
@@ -25,17 +25,34 @@ Use your fork URL if you forked. Replace `https` with `git@github.com:...` if yo
 
 ## Step 2: `./scripts/bootstrap`
 
-This script (run once, or re-run to add packages):
+The bootstrap script is a thin orchestrator over per-category Brewfiles in `scripts/brewfiles/`. It supports subcommands so you can install everything, install only what you need, or upgrade later — without re-running the full set every time.
 
-1. **Xcode Command Line Tools** — Prompts `xcode-select --install` if not present. Needed for Git and compilers.
-2. **Homebrew** — Installs Homebrew if missing, then `brew update` and `brew upgrade`.
-3. **CLI packages** — ffmpeg, git, httpie, imagemagick, mas, rename, tree, webkit2png, lerna, awscli, kubernetes-cli, eksctl (Weaveworks tap), btop.
-4. **iTerm2 and fonts** — iTerm2 cask, `homebrew/cask-fonts` tap, Hack Nerd Font and Meslo LG Nerd Font (for Powerlevel10k).
-5. **Cask apps** — Raycast, Figma, Firefox, GitHub, Chrome, ImageOptim, Notion, Nucleo, Postman, Slack, Rectangle, Spotify, Tor Browser, Transmit, VS Code, ngrok, Robo 3T, Altair GraphQL Client.
-6. **Docker** — Docker cask, docker-compose, and CLI plugin symlink under `~/.docker/cli-plugins/`.
-7. **Kubernetes / dev** — kubectl, kind; optional `mas install` for Xcode (497799835), Line (539883307), Amphetamine (937984704).
+```shell
+./scripts/bootstrap                              # install everything
+./scripts/bootstrap install core node docker     # install only these categories
+./scripts/bootstrap list                         # show available categories
+./scripts/bootstrap doctor                       # report missing packages per category
+./scripts/bootstrap update                       # explicit: brew update && brew upgrade
+```
 
-Comment or uncomment lines in `scripts/bootstrap` to skip or add packages (e.g. casks you don’t want).
+The first run will also (when missing) prompt for **Xcode Command Line Tools** and install **Homebrew**.
+
+### Categories
+
+| Category | What it installs |
+|---|---|
+| `core` | ffmpeg, git, httpie, imagemagick, mas, rename, tree, webkit2png, btop, fresh-editor |
+| `node` | fnm, then `fnm install --lts && fnm default lts-latest` |
+| `cloud` | awscli, kubernetes-cli, kind, eksctl (Weaveworks tap) |
+| `docker` | docker cask, docker-compose, and CLI plugin symlink under `~/.docker/cli-plugins/` |
+| `terminal` | iTerm2, cmux, Hack Nerd Font, Meslo LG Nerd Font |
+| `apps-daily` | Raycast, Rectangle, Chrome, Firefox, Slack, Notion, Spotify, GitHub |
+| `apps-dev` | VS Code, Postman, ngrok, Robo 3T, Altair GraphQL Client, Figma, Nucleo, ImageOptim, Transmit, Tor Browser |
+| `mas` | Mac App Store: Xcode (497799835), Line (539883307), Amphetamine (937984704) — requires a signed-in App Store |
+
+To add or remove a package, edit the relevant `scripts/brewfiles/Brewfile.<category>`. To add a whole new category, drop a new `Brewfile.<name>` in that directory and append the name to `CATEGORIES` in `scripts/bootstrap`.
+
+> **Note on `brew update` / `brew upgrade`** — they're no longer in the default install path (they made every re-run slow). Run `./scripts/bootstrap update` explicitly when you want to refresh and upgrade.
 
 ---
 

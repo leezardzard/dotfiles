@@ -1,0 +1,4 @@
+# Mac App Store apps (requires `mas` from Brewfile.core and a signed-in App Store)
+mas "Xcode", id: 497799835
+mas "Line", id: 539883307
+mas "Amphetamine", id: 937984704

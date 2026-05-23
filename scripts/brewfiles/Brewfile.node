@@ -1,0 +1,3 @@
+# node toolchain — fnm + a default LTS Node (post-hook installs LTS)
+# node itself is intentionally NOT brewed — fnm manages versions
+brew "fnm"
