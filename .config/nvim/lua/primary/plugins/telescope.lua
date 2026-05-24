@@ -11,7 +11,7 @@ return {
     local telescope = require("telescope")
     local actions = require("telescope.actions")
     local transform_mod = require("telescope.actions.mt").transform_mod
-    local open_with_trouble = require("trouble.sources.telescope").open
+    local open_with_trouble = require("trouble.providers.telescope").open_with_trouble
 
     -- or create your custom action
     local custom_actions = transform_mod({
