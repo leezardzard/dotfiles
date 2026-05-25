@@ -54,26 +54,24 @@ Path defaults to `$PWD`. Path resolution tries a literal path first (with `~` ex
 
 If the target directory is inside a git repo, the workspace is named `<repo>:<branch>` (repo = basename of the main worktree, so linked worktrees still resolve to the parent repo name) and the description is set to the directory basename. Otherwise the workspace is named after the directory basename.
 
-For `n=2`, `n=3`, and `n=4`, `claude-dev --all` is auto-launched in the right pane (n=2, n=3) or right-top pane (n=4). The other panes start as plain shells.
-
-| n | Geometry | Claude pane |
-|---|----------|-------------|
-| 2 | Horizontal split 0.5 | right |
-| 3 | Horizontal split 0.5: left = 2-stack, right = full-height | right (full-height) |
-| 4 | Horizontal split 0.5: left = 2-stack, right = 2-stack (2x2 grid) | right-top |
-| 5 | Horizontal split 0.6: left = 2x2 grid, right = full-height side runner | — |
-| 6 | Horizontal split 0.5: each side = 3-row via nested verticals (3x2 grid) | — |
+| n | Geometry |
+|---|----------|
+| 2 | Horizontal split 0.5 — two equal columns. |
+| 3 | Horizontal split 0.5: left = 2-stack, right = full-height. |
+| 4 | Horizontal split 0.5: left = 2-stack, right = 2-stack (2x2 grid). |
+| 5 | Horizontal split 0.6: left = 2x2 grid, right = full-height side runner. |
+| 6 | Horizontal split 0.5: each side = 3-row via nested verticals (3x2 grid). |
 
 Examples:
 
 ```shell
-cm-cd 4 ~/.dotfiles   # 2x2 grid, claude in right-top, workspace ".dotfiles:main"
-cm-cd 3               # 2-left-stack + claude-right, workspace named from $PWD
+cm-cd 4 ~/.dotfiles   # 2x2 grid, workspace ".dotfiles:main"
+cm-cd 3               # 2-left-stack + 1-right, workspace named from $PWD
 cm-cd 2 ~/projects/myapp
 cm-cd 4 dotf          # zoxide fuzzy match -> ~/.dotfiles
 ```
 
-The same layouts are available from the cmux command palette as "2 panes" through "6 panes". The workspace `cwd` is set to `.` (the current workspace directory) when invoked from the palette; the palette entries mirror the claude-pane behavior of the function.
+The same layouts are available from the cmux command palette as "2 panes" through "6 panes". The workspace `cwd` is set to `.` (the current workspace directory) when invoked from the palette.
 
 `bin/cmux-cd-all <path>` broadcasts `cd <path>` to every terminal surface in the current workspace. The cmux action "cd all panes: ~/.dotfiles" calls this script.
 

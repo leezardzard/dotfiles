@@ -17,18 +17,17 @@ _cmux_bin() {
 }
 
 # _cmux_layout_json <n> — emit the layout JSON for n panes.
-# n=2/3/4 auto-launch `claude-dev --all` in the right / right-top pane.
 _cmux_layout_json() {
   local n=$1
   case "$n" in
     2)
-      printf '%s' '{"direction":"horizontal","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal","command":"claude-dev --all"}]}}]}'
+      printf '%s' '{"direction":"horizontal","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]}'
       ;;
     3)
-      printf '%s' '{"direction":"horizontal","split":0.5,"children":[{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]},{"pane":{"surfaces":[{"type":"terminal","command":"claude-dev --all"}]}}]}'
+      printf '%s' '{"direction":"horizontal","split":0.5,"children":[{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]},{"pane":{"surfaces":[{"type":"terminal"}]}}]}'
       ;;
     4)
-      printf '%s' '{"direction":"horizontal","split":0.5,"children":[{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]},{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal","command":"claude-dev --all"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]}]}'
+      printf '%s' '{"direction":"horizontal","split":0.5,"children":[{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]},{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]}]}'
       ;;
     5)
       printf '%s' '{"direction":"horizontal","split":0.6,"children":[{"direction":"horizontal","split":0.5,"children":[{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]},{"direction":"vertical","split":0.5,"children":[{"pane":{"surfaces":[{"type":"terminal"}]}},{"pane":{"surfaces":[{"type":"terminal"}]}}]}]},{"pane":{"surfaces":[{"type":"terminal"}]}}]}'
@@ -64,14 +63,13 @@ _cmux_workspace_name() {
 #
 # Open a new cmux workspace with a predefined split layout.
 # Path defaults to $PWD; literal paths are tried first, then `zoxide query`.
-# n=2/3/4 auto-launch `claude-dev --all` in the right / right-top pane.
 # Workspace is named "<repo>:<branch>" (description = basename of target) if
 # target is inside a git repo; otherwise named after the directory basename.
 #
 # Examples:
-#   cm-cd 4 ~/.dotfiles   # 2x2 grid in ~/.dotfiles, claude in right-top
+#   cm-cd 4 ~/.dotfiles   # 2x2 grid in ~/.dotfiles
 #   cm-cd 3 dotf          # zoxide fuzzy match -> ~/.dotfiles
-#   cm-cd 2               # side-by-side in $PWD, claude on the right
+#   cm-cd 2               # side-by-side in $PWD
 cm-cd() {
   local n=${1:-}
   local target=${2:-$PWD}

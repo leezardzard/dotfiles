@@ -149,22 +149,22 @@
     "layout-2-panes": {
       "type": "workspaceCommand",
       "title": "2 panes",
-      "subtitle": "New workspace: side-by-side (claude-dev --all on right)",
-      "keywords": ["layout", "split", "panes", "claude"],
+      "subtitle": "New workspace: side-by-side",
+      "keywords": ["layout", "split", "panes"],
       "commandName": "2 panes"
     },
     "layout-3-panes": {
       "type": "workspaceCommand",
       "title": "3 panes",
-      "subtitle": "New workspace: 2 stacked left + claude-dev on right",
-      "keywords": ["layout", "split", "panes", "claude"],
+      "subtitle": "New workspace: 2 stacked left + 1 full-height right",
+      "keywords": ["layout", "split", "panes"],
       "commandName": "3 panes"
     },
     "layout-4-panes": {
       "type": "workspaceCommand",
       "title": "4 panes",
-      "subtitle": "New workspace: 2x2 grid (claude-dev --all on right-top)",
-      "keywords": ["layout", "split", "panes", "claude"],
+      "subtitle": "New workspace: 2x2 grid",
+      "keywords": ["layout", "split", "panes"],
       "commandName": "4 panes"
     },
     "layout-5-panes": {
@@ -194,7 +194,7 @@
   "commands": [
     {
       "name": "2 panes",
-      "keywords": ["layout", "split", "panes", "claude"],
+      "keywords": ["layout", "split", "panes"],
       "workspace": {
         "name": "2 panes",
         "cwd": ".",
@@ -203,14 +203,14 @@
           "split": 0.5,
           "children": [
             { "pane": { "surfaces": [{ "type": "terminal" }] } },
-            { "pane": { "surfaces": [{ "type": "terminal", "command": "claude-dev --all" }] } }
+            { "pane": { "surfaces": [{ "type": "terminal" }] } }
           ]
         }
       }
     },
     {
       "name": "3 panes",
-      "keywords": ["layout", "split", "panes", "claude"],
+      "keywords": ["layout", "split", "panes"],
       "workspace": {
         "name": "3 panes",
         "cwd": ".",
@@ -226,14 +226,14 @@
                 { "pane": { "surfaces": [{ "type": "terminal" }] } }
               ]
             },
-            { "pane": { "surfaces": [{ "type": "terminal", "command": "claude-dev --all" }] } }
+            { "pane": { "surfaces": [{ "type": "terminal" }] } }
           ]
         }
       }
     },
     {
       "name": "4 panes",
-      "keywords": ["layout", "split", "panes", "claude"],
+      "keywords": ["layout", "split", "panes"],
       "workspace": {
         "name": "4 panes",
         "cwd": ".",
@@ -253,7 +253,7 @@
               "direction": "vertical",
               "split": 0.5,
               "children": [
-                { "pane": { "surfaces": [{ "type": "terminal", "command": "claude-dev --all" }] } },
+                { "pane": { "surfaces": [{ "type": "terminal" }] } },
                 { "pane": { "surfaces": [{ "type": "terminal" }] } }
               ]
             }
