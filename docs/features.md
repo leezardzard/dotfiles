@@ -73,6 +73,8 @@ cm-cd dotf 4          # zoxide fuzzy match -> ~/.dotfiles
 
 The same layouts are available from the cmux command palette as "2 panes" through "6 panes". The workspace `cwd` is set to `.` (the current workspace directory) when invoked from the palette.
 
+When invoked from a single-pane cmux workspace (typical "fresh tab" starter), `cm-cd` closes that caller workspace after spawning the new one so single-pane scratch tabs don't accumulate. Multi-pane caller workspaces are left alone.
+
 `bin/cmux-cd-all <path>` broadcasts `cd <path>` to every terminal surface in the current workspace. The cmux action "cd all panes: ~/.dotfiles" calls this script.
 
 `cm-wt-go` composes the worktree picker (`wt go`) with the pane broadcaster. It fzf-picks a git worktree from `git worktree list`, `cd`s the calling shell into it, runs `cmux-cd-all <path>` so every other pane in the current workspace follows, then renames the cmux workspace to the new `<repo>:<branch>` (matching `cm-cd`'s naming). Outside a cmux workspace it falls back to a local `cd` with a notice; outside a git repo it exits with the same `Not in a git repository.` error as `wt go`.

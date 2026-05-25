@@ -102,14 +102,31 @@ cm-cd() {
   ws_name=$(_cmux_workspace_name "$target")
   layout=$(_cmux_layout_json "$n")
 
+  # If we're invoked from a single-pane cmux workspace (typical "fresh tab"
+  # starter), close that workspace after spawning the new one so it doesn't
+  # accumulate. Multi-pane workspaces are left alone — they likely hold work.
+  local caller_ws=${CMUX_WORKSPACE_ID:-}
+  local caller_panes=0
+  if [[ -n "$caller_ws" ]]; then
+    caller_panes=$(_cmux_bin list-panes --workspace "$caller_ws" 2>/dev/null | wc -l | tr -d ' ')
+  fi
+
   local -a args=(new-workspace
     --name "$ws_name"
     --description "${target:t}"
     --cwd "$target"
     --layout "$layout"
+    --focus true
   )
   # Discard stdout (`OK workspace:N`); errors still surface via stderr.
   _cmux_bin "${args[@]}" >/dev/null
+
+  # Close the caller workspace AFTER focus has moved to the new one.
+  # Background + disown so this shell isn't killed mid-function.
+  if [[ -n "$caller_ws" && "$caller_panes" == "1" ]]; then
+    ( _cmux_bin close-workspace --workspace "$caller_ws" >/dev/null 2>&1 ) &
+    disown 2>/dev/null
+  fi
 }
 
 # cm-wt-go
