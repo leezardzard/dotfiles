@@ -37,7 +37,13 @@ fi
 
 # Enumerate all panes in the current workspace, then all surfaces per pane,
 # and send `cd <path>` + Enter to each terminal surface.
-pane_refs=$("$CMUX_BIN" list-panes --id-format uuids 2>/dev/null | awk '{print $1}') || {
+#
+# cmux list-panes / list-pane-surfaces prefix the focused/selected row with
+# `* ` and indent others with two spaces; the id is therefore in $2 for the
+# marked row and $1 otherwise. Use awk to pick whichever looks like an id.
+_pick_id='{ for (i=1; i<=NF; i++) if ($i ~ /^[0-9A-F-]{36}$/) { print $i; break } }'
+
+pane_refs=$("$CMUX_BIN" list-panes --id-format uuids 2>/dev/null | awk "$_pick_id") || {
   echo "cmux-cd-all: failed to list panes (is cmux running?)" >&2
   exit 1
 }
@@ -50,7 +56,7 @@ fi
 sent=0
 while IFS= read -r pane_id; do
   [[ -z "$pane_id" ]] && continue
-  surface_refs=$("$CMUX_BIN" list-pane-surfaces --pane "$pane_id" --id-format uuids 2>/dev/null | awk '{print $1}') || continue
+  surface_refs=$("$CMUX_BIN" list-pane-surfaces --pane "$pane_id" --id-format uuids 2>/dev/null | awk "$_pick_id") || continue
   while IFS= read -r surface_id; do
     [[ -z "$surface_id" ]] && continue
     "$CMUX_BIN" send --surface "$surface_id" "cd ${target}\n" 2>/dev/null && (( sent++ )) || true
