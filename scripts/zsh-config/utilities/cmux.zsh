@@ -108,3 +108,52 @@ cm-cd() {
   )
   _cmux_bin "${args[@]}"
 }
+
+# cm-wt-go
+#
+# Fzf-pick a git worktree and broadcast `cd <path>` to every terminal surface
+# in the current cmux workspace. Local shell cd's first; broadcast follows.
+# When not running inside a cmux workspace (no panes found), the local cd
+# still happens and the broadcast is skipped with a notice.
+cm-wt-go() {
+  if ! _worktree_git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "Not in a git repository."
+    return 1
+  fi
+
+  local selected_worktree
+  selected_worktree=$(_worktree_git worktree list \
+    | _worktree_fzf --prompt="Select Git Worktree (broadcast cd to all panes)> " \
+    | awk '{print $1}')
+
+  [[ -z "$selected_worktree" ]] && return 0
+
+  if ! cd "$selected_worktree"; then
+    echo "cm-wt-go: failed to cd into $selected_worktree" >&2
+    return 1
+  fi
+
+  local broadcaster
+  broadcaster=$(command -v cmux-cd-all 2>/dev/null)
+  [[ -z "$broadcaster" && -x "$HOME/.dotfiles/bin/cmux-cd-all" ]] && \
+    broadcaster="$HOME/.dotfiles/bin/cmux-cd-all"
+
+  if [[ -z "$broadcaster" ]]; then
+    echo "cm-wt-go: cmux-cd-all not found — local cd only" >&2
+  else
+    if "$broadcaster" "$selected_worktree" 2>/dev/null; then
+      # Broadcast succeeded → we're in a cmux workspace. Rename it to match
+      # the new worktree (e.g. ".dotfiles:main" → ".dotfiles:feature-x").
+      local new_ws_name
+      new_ws_name=$(_cmux_workspace_name "$selected_worktree")
+      if [[ -n "$new_ws_name" ]]; then
+        _cmux_bin rename-workspace "$new_ws_name" 2>/dev/null || true
+      fi
+    else
+      echo "cm-wt-go: not in a cmux workspace — local cd only" >&2
+    fi
+  fi
+
+  echo "Switched to worktree: $selected_worktree"
+  ls -a
+}
