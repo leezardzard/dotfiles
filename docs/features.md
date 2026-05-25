@@ -47,10 +47,10 @@ These are wired in `scripts/zsh-config/tools/` and loaded by `load.zsh`.
 The `cm-cd` function (from `scripts/zsh-config/utilities/cmux.zsh`) opens a new cmux workspace with a predefined split layout. All panes inherit the workspace working directory — no per-surface `cd` is needed.
 
 ```
-cm-cd <2|3|4|5|6> [path]
+cm-cd [path] <2|3|4|5|6>
 ```
 
-Path defaults to `$PWD`. Path resolution tries a literal path first (with `~` expansion + realpath), then falls back to `zoxide query` — so `cm-cd 4 dotf` finds `~/.dotfiles`. Exits 2 (no workspace created) if the pane count is not in `2..6` or if neither resolution finds a directory.
+Path defaults to `$PWD`. Path resolution tries a literal path first (with `~` expansion + realpath), then falls back to `zoxide query` — so `cm-cd dotf 4` finds `~/.dotfiles`. Exits 2 (no workspace created) if the pane count is not in `2..6` or if neither resolution finds a directory.
 
 If the target directory is inside a git repo, the workspace is named `<repo>:<branch>` (repo = basename of the main worktree, so linked worktrees still resolve to the parent repo name) and the description is set to the directory basename. Otherwise the workspace is named after the directory basename.
 
@@ -65,10 +65,10 @@ If the target directory is inside a git repo, the workspace is named `<repo>:<br
 Examples:
 
 ```shell
-cm-cd 4 ~/.dotfiles   # 2x2 grid, workspace ".dotfiles:main"
+cm-cd ~/.dotfiles 4   # 2x2 grid, workspace ".dotfiles:main"
 cm-cd 3               # 2-left-stack + 1-right, workspace named from $PWD
-cm-cd 2 ~/projects/myapp
-cm-cd 4 dotf          # zoxide fuzzy match -> ~/.dotfiles
+cm-cd ~/projects/myapp 2
+cm-cd dotf 4          # zoxide fuzzy match -> ~/.dotfiles
 ```
 
 The same layouts are available from the cmux command palette as "2 panes" through "6 panes". The workspace `cwd` is set to `.` (the current workspace directory) when invoked from the palette.

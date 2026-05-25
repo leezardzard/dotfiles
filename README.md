@@ -9,7 +9,7 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
 - **Shell tools** — bat, eza, zoxide, fzf, fd, atuin, dust, thefuck, tlrc
 - **Git** — delta pager and **wt** (fzf-based Git worktree switcher)
 - **Neovim** — Lazy.nvim, LSP, Telescope, nvim-tree, and more
-- **cmux** — pane-layout quick-commands (`cm-cd 2..6`), worktree broadcast (`cm-wt-go`), git-aware workspace naming, repo-tracked `cmux.json`
+- **cmux** — pane-layout quick-commands (`cm-cd [path] 2..6`), worktree broadcast (`cm-wt-go`), git-aware workspace naming, repo-tracked `cmux.json`
 - **Tmux** — configs in repo root
 - **Keyboard** — optional RAMA WORKS KARA / Via keymap in `keyboard/`
 

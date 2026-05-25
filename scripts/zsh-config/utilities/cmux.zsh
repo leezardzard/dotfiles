@@ -59,7 +59,7 @@ _cmux_workspace_name() {
   fi
 }
 
-# cm-cd <2|3|4|5|6> [path]
+# cm-cd [path] <2|3|4|5|6>
 #
 # Open a new cmux workspace with a predefined split layout.
 # Path defaults to $PWD; literal paths are tried first, then `zoxide query`.
@@ -67,20 +67,24 @@ _cmux_workspace_name() {
 # target is inside a git repo; otherwise named after the directory basename.
 #
 # Examples:
-#   cm-cd 4 ~/.dotfiles   # 2x2 grid in ~/.dotfiles
-#   cm-cd 3 dotf          # zoxide fuzzy match -> ~/.dotfiles
+#   cm-cd ~/.dotfiles 4   # 2x2 grid in ~/.dotfiles
+#   cm-cd dotf 3          # zoxide fuzzy match -> ~/.dotfiles
 #   cm-cd 2               # side-by-side in $PWD
 cm-cd() {
-  local n=${1:-}
-  local target=${2:-$PWD}
+  local target n
+  case $# in
+    1) target=$PWD; n=$1 ;;
+    2) target=$1;   n=$2 ;;
+    *) echo "usage: cm-cd [path] <2|3|4|5|6>" >&2; return 2 ;;
+  esac
 
   if [[ ! "$n" =~ ^[2-6]$ ]]; then
-    echo "usage: cm-cd <2|3|4|5|6> [path]" >&2
+    echo "usage: cm-cd [path] <2|3|4|5|6>" >&2
     return 2
   fi
 
   # Resolve target: try literal path first (with ~ expansion + realpath),
-  # then fall back to `zoxide query` so `cm-cd 4 dotf` finds ~/.dotfiles.
+  # then fall back to `zoxide query` so `cm-cd dotf 4` finds ~/.dotfiles.
   local expanded="${~target}"
   local resolved=${expanded:A}
   if [[ -d "$resolved" ]]; then

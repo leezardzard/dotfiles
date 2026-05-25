@@ -130,7 +130,7 @@ To reload the config without restarting the app:
 cmux reload-config
 ```
 
-The `cm-cd` shell function (loaded automatically from `scripts/zsh-config/utilities/cmux.zsh`) opens a new workspace with a predefined split layout — for example, `cm-cd 4 ~/.dotfiles` opens a 2x2 grid with all panes cd'd into `~/.dotfiles`. The workspace is named `<repo>:<branch>` when the target is inside a git repo.
+The `cm-cd` shell function (loaded automatically from `scripts/zsh-config/utilities/cmux.zsh`) opens a new workspace with a predefined split layout — for example, `cm-cd ~/.dotfiles 4` opens a 2x2 grid with all panes cd'd into `~/.dotfiles`. The workspace is named `<repo>:<branch>` when the target is inside a git repo.
 
 ### Keyboard (Via)
 
