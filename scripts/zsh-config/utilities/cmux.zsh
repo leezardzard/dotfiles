@@ -108,7 +108,8 @@ cm-cd() {
     --cwd "$target"
     --layout "$layout"
   )
-  _cmux_bin "${args[@]}"
+  # Discard stdout (`OK workspace:N`); errors still surface via stderr.
+  _cmux_bin "${args[@]}" >/dev/null
 }
 
 # cm-wt-go
@@ -149,7 +150,7 @@ cm-wt-go() {
       local new_ws_name
       new_ws_name=$(_cmux_workspace_name "$selected_worktree")
       if [[ -n "$new_ws_name" ]]; then
-        _cmux_bin rename-workspace "$new_ws_name" 2>/dev/null || true
+        _cmux_bin rename-workspace "$new_ws_name" >/dev/null 2>&1 || true
       fi
     else
       echo "cm-wt-go: not in a cmux workspace — local cd only" >&2
