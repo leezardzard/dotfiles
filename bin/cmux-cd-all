@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# cmux-cd-all <path>
+#
+# Broadcast `cd <path>` to every terminal surface in the currently-focused
+# cmux workspace. Relies on CMUX_WORKSPACE_ID being set (auto-set in cmux
+# terminals) and the cmux CLI being on PATH.
+#
+# Usage: cmux-cd-all ~/.dotfiles
+
+set -euo pipefail
+
+CMUX_BIN=$(command -v cmux 2>/dev/null || true)
+if [[ -z "$CMUX_BIN" ]]; then
+  [[ -x /opt/homebrew/bin/cmux ]] && CMUX_BIN=/opt/homebrew/bin/cmux
+  [[ -z "$CMUX_BIN" && -x /usr/local/bin/cmux ]] && CMUX_BIN=/usr/local/bin/cmux
+fi
+if [[ -z "$CMUX_BIN" || ! -x "$CMUX_BIN" ]]; then
+  echo "cmux-cd-all: cmux not found" >&2
+  exit 1
+fi
+
+if [[ $# -lt 1 ]]; then
+  echo "usage: cmux-cd-all <path>" >&2
+  exit 1
+fi
+
+# Expand ~ and resolve to absolute path
+target=$(cd "${1/#\~/$HOME}" 2>/dev/null && pwd) || {
+  echo "cmux-cd-all: not a directory: $1" >&2
+  exit 1
+}
+
+if [[ ! -d "$target" ]]; then
+  echo "cmux-cd-all: not a directory: $target" >&2
+  exit 1
+fi
+
+# Enumerate all panes in the current workspace, then all surfaces per pane,
+# and send `cd <path>` + Enter to each terminal surface.
+pane_refs=$("$CMUX_BIN" list-panes --id-format uuids 2>/dev/null | awk '{print $1}') || {
+  echo "cmux-cd-all: failed to list panes (is cmux running?)" >&2
+  exit 1
+}
+
+if [[ -z "$pane_refs" ]]; then
+  echo "cmux-cd-all: no panes found in current workspace" >&2
+  exit 1
+fi
+
+sent=0
+while IFS= read -r pane_id; do
+  [[ -z "$pane_id" ]] && continue
+  surface_refs=$("$CMUX_BIN" list-pane-surfaces --pane "$pane_id" --id-format uuids 2>/dev/null | awk '{print $1}') || continue
+  while IFS= read -r surface_id; do
+    [[ -z "$surface_id" ]] && continue
+    "$CMUX_BIN" send --surface "$surface_id" "cd ${target}\n" 2>/dev/null && (( sent++ )) || true
+  done <<< "$surface_refs"
+done <<< "$pane_refs"
+
+echo "cmux-cd-all: sent cd to $sent surface(s)"

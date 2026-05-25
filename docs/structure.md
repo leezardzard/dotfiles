@@ -9,6 +9,8 @@ Directory layout and what each part does.
 | `scripts/` | Bootstrap scripts and modular Zsh config. |
 | `template/.zshrc` | Base Oh My Zsh `.zshrc`; copied to `~/.zshrc` by bootstrap, then a `source .../load.zsh` line is appended. |
 | `.config/nvim/` | Neovim config (Lazy.nvim, core, plugins, LSP); symlink to `~/.config/nvim` to use. |
+| `.config/cmux/` | cmux config (`cmux.json` with pane-layout commands); symlink to `~/.config/cmux` to use. |
+| `bin/` | Executable helper scripts (e.g. `cmux-cd-all`). |
 | `keyboard/` | Optional Via keymap (e.g. RAMA WORKS KARA); not installed by scripts. |
 | `.tmux.conf`, `.tmux.powerline.conf` | Tmux configs; symlink or copy into `$HOME` to use. |
 
@@ -34,6 +36,7 @@ Directory layout and what each part does.
 | `git/gitconfig` | Delta pager config; copied to `~/.gitconfig` when git-delta is first installed. |
 | `git/worktree.zsh` | **wt** — fzf-based Git worktree commands (`wt add`, `wt go`, `wt remote`, `wt sync`, `wt rm`, etc.). |
 | `utilities/ffmpeg.zsh` | FFmpeg-related helpers. |
+| `utilities/cmux.zsh` | **cm-open** — pane-layout quick-commands for cmux. |
 
 ## `.config/nvim/`
 

@@ -9,6 +9,7 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
 - **Shell tools** — bat, eza, zoxide, fzf, fd, atuin, dust, thefuck, tlrc
 - **Git** — delta pager and **wt** (fzf-based Git worktree switcher)
 - **Neovim** — Lazy.nvim, LSP, Telescope, nvim-tree, and more
+- **cmux** — pane-layout quick-commands (`cm-open 2..6`) with repo-tracked `cmux.json`
 - **Tmux** — configs in repo root
 - **Keyboard** — optional RAMA WORKS KARA / Via keymap in `keyboard/`
 
@@ -59,8 +60,10 @@ To customize the prompt, run `p10k configure`. To add or remove packages, edit t
 
 ```
 scripts/           # Bootstrap and zsh-config (keybindings, tools, dev, git, utilities)
+bin/               # Executable helper scripts (e.g. cmux-cd-all)
 template/.zshrc    # Base .zshrc copied to ~/.zshrc; load.zsh is appended
 .config/nvim/      # Neovim config (Lazy.nvim, plugins, LSP)
+.config/cmux/      # cmux config (cmux.json with pane-layout commands and actions)
 keyboard/          # Optional Via keymap (e.g. RAMA WORKS KARA)
 .tmux.conf         # Tmux config
 ```

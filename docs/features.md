@@ -42,6 +42,37 @@ Examples: `wt add feature-x`, `wt remote`, `wt go`, `wt rm`.
 
 These are wired in `scripts/zsh-config/tools/` and loaded by `load.zsh`.
 
+## cmux pane layouts
+
+The `cm-open` function (from `scripts/zsh-config/utilities/cmux.zsh`) opens a new cmux workspace with a predefined split layout. All panes inherit the workspace working directory — no per-surface `cd` is needed.
+
+```
+cm-open <2|3|4|5|6> [path]
+```
+
+Path defaults to `$PWD`. Path resolution tries a literal path first (with `~` expansion + realpath), then falls back to `zoxide query` — so `cm-open 4 dotf` finds `~/.dotfiles`. Exits 2 (no workspace created) if the pane count is not in `2..6` or if neither resolution finds a directory.
+
+| n | Geometry | Description |
+|---|----------|-------------|
+| 2 | Horizontal split 0.5 | Two equal side-by-side columns. |
+| 3 | Horizontal split 0.5: left = 2-stack, right = full-height | 2 stacked panes on left, 1 full-height on right. |
+| 4 | Horizontal split 0.5: left = 2-stack, right = 2-stack | 2x2 grid. |
+| 5 | Horizontal split 0.6: left = 2x2 grid, right = full-height | 2x2 grid + side runner. |
+| 6 | Horizontal split 0.5: each side = 3-row via nested verticals | 3x2 grid. |
+
+Examples:
+
+```shell
+cm-open 4 ~/.dotfiles   # 2x2 grid, all panes in ~/.dotfiles
+cm-open 3               # 2-left-stack + 1-right in $PWD
+cm-open 2 ~/projects/myapp
+cm-open 4 dotf          # zoxide fuzzy match -> ~/.dotfiles
+```
+
+The same layouts are available from the cmux command palette as "2 panes" through "6 panes". The workspace `cwd` is set to `.` (the current workspace directory) when invoked from the palette.
+
+`bin/cmux-cd-all <path>` broadcasts `cd <path>` to every terminal surface in the current workspace. The cmux action "cd all panes: ~/.dotfiles" calls this script.
+
 ## Neovim
 
 The repo includes a full Neovim config under `.config/nvim/`:

@@ -107,6 +107,31 @@ Configs are in the repo root: `.tmux.conf` and `.tmux.powerline.conf`. Symlink o
 ln -sfn ~/.dotfiles/.tmux.conf ~/.tmux.conf
 ```
 
+### cmux
+
+cmux is a Ghostty-based terminal multiplexer installed by `./scripts/bootstrap install terminal`. The repo tracks its config under `.config/cmux/`. To use it:
+
+If `~/.config/cmux/` already exists as a real file or directory, back it up first:
+
+```shell
+mv ~/.config/cmux ~/.config/cmux.backup
+```
+
+Then symlink the repo config:
+
+```shell
+mkdir -p ~/.config
+ln -sfn ~/.dotfiles/.config/cmux ~/.config/cmux
+```
+
+To reload the config without restarting the app:
+
+```shell
+cmux reload-config
+```
+
+The `cm-open` shell function (loaded automatically from `scripts/zsh-config/utilities/cmux.zsh`) opens a new workspace with a predefined split layout — for example, `cm-open 4 ~/.dotfiles` opens a 2x2 grid with all panes cd'd into `~/.dotfiles`.
+
 ### Keyboard (Via)
 
 The `keyboard/` folder contains a RAMA WORKS KARA keymap (e.g. `rama_works_kara.json`). Import or copy into Via as needed; not installed by the scripts.

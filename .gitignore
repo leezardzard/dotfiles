@@ -9,3 +9,5 @@
 !.config/fresh/types/**
 !.config/fresh/themes/
 !.config/fresh/themes/**
+!.config/cmux/
+!.config/cmux/cmux.json
