@@ -114,8 +114,17 @@ brew install go
 ###############################################################################
 # Load all zsh configurations
 ###############################################################################
-# Ensure .zshrc ends with a newline before adding our source line
-echo "" >> ~/.zshrc
-echo "source $(pwd)/scripts/zsh-config/load.zsh" >> ~/.zshrc
+# Prepend the dotfiles source line ABOVE the Powerlevel10k instant-prompt
+# block. p10k aborts instant prompt if any console I/O happens after its block
+# runs, so anything that might print at init (warnings, deprecations, etc.)
+# must run before it. Idempotent: skip if the line is already present.
+SOURCE_LINE="source $(pwd)/scripts/zsh-config/load.zsh"
+if ! grep -qF "$SOURCE_LINE" ~/.zshrc; then
+  { print -r -- "# Dotfiles modules — must precede Powerlevel10k instant prompt."
+    print -r -- "$SOURCE_LINE"
+    print
+    cat ~/.zshrc
+  } > ~/.zshrc.tmp && mv ~/.zshrc.tmp ~/.zshrc
+fi
 
 echo "✅ All configurations have been modularized and loaded!"
