@@ -35,15 +35,166 @@ _cmux_hash_index() {
   printf '%d\n' $((16#${hex:0:1}))
 }
 
-# _cmux_color_for_target <target> — print a palette color name.
-# Deterministic from the main worktree path when <target> is in a git repo;
-# random otherwise. Always succeeds (falls back to a fixed color).
+# Persisted repo→color map. Guarantees uniqueness up to 16 active repos by
+# tracking assignments in ~/.config/cmux/colors.json. On miss, pick the first
+# palette color not currently in use (hash tiebreak); when all 16 are taken,
+# evict the least-recently-used entry and reuse its color. Hash-only path
+# (current behavior) is the graceful fallback when the file/lock is unusable.
+typeset -gA _cmux_color_by_path _cmux_color_lastused_by_path
+
+_cmux_color_state_file() {
+  print -r -- "${XDG_CONFIG_HOME:-$HOME/.config}/cmux/colors.json"
+}
+
+_cmux_color_lock_dir() {
+  print -r -- "${XDG_CONFIG_HOME:-$HOME/.config}/cmux/colors.lock"
+}
+
+_cmux_color_log() {
+  [[ -n "${CMUX_COLOR_DEBUG:-}" ]] && print -r -- "cmux-color: $*" >&2
+}
+
+# Acquire mkdir-based mutex with 2s budget; recover stale locks older than 5s.
+_cmux_color_lock() {
+  local lock dir age now mtime
+  lock=$(_cmux_color_lock_dir)
+  dir=${lock:h}
+  mkdir -p "$dir" 2>/dev/null || return 1
+  local i=0
+  while ! mkdir "$lock" 2>/dev/null; do
+    if [[ -d "$lock" ]]; then
+      mtime=$(stat -f %m "$lock" 2>/dev/null || stat -c %Y "$lock" 2>/dev/null || echo 0)
+      now=$(date +%s)
+      age=$(( now - mtime ))
+      if (( age > 5 )); then
+        rmdir "$lock" 2>/dev/null
+        continue
+      fi
+    fi
+    (( i++ >= 40 )) && return 1
+    sleep 0.05
+  done
+  return 0
+}
+
+_cmux_color_unlock() {
+  rmdir "$(_cmux_color_lock_dir)" 2>/dev/null
+}
+
+# Parse the on-disk JSON into _cmux_color_by_path / _cmux_color_lastused_by_path.
+# Format we emit (and only format we parse) — one entry per line:
+#     "<path>": {"color": "Red", "last_used": 1716700000}
+# Malformed file → silently treated as empty (will be overwritten on next write).
+_cmux_color_read_map() {
+  _cmux_color_by_path=()
+  _cmux_color_lastused_by_path=()
+  local file line
+  file=$(_cmux_color_state_file)
+  [[ -f "$file" ]] || return 0
+  while IFS= read -r line; do
+    if [[ "$line" =~ '^[[:space:]]*"([^"]+)"[[:space:]]*:[[:space:]]*\{"color":[[:space:]]*"([A-Za-z]+)",[[:space:]]*"last_used":[[:space:]]*([0-9]+)\}' ]]; then
+      _cmux_color_by_path[${match[1]}]=${match[2]}
+      _cmux_color_lastused_by_path[${match[1]}]=${match[3]}
+    fi
+  done < "$file"
+}
+
+# Serialize the in-memory map to disk via tmp + atomic rename.
+_cmux_color_write_map() {
+  local file dir tmp paths p sep i n
+  file=$(_cmux_color_state_file)
+  dir=${file:h}
+  mkdir -p "$dir" 2>/dev/null || return 1
+  tmp="$file.tmp.$$"
+  paths=(${(ko)_cmux_color_by_path})
+  n=${#paths}
+  {
+    print -r -- "{"
+    print -r -- '  "version": 1,'
+    print -r -- '  "assignments": {'
+    for (( i=1; i<=n; i++ )); do
+      p=${paths[i]}
+      sep=","
+      (( i == n )) && sep=""
+      print -r -- "    \"$p\": {\"color\": \"${_cmux_color_by_path[$p]}\", \"last_used\": ${_cmux_color_lastused_by_path[$p]}}$sep"
+    done
+    print -r -- "  }"
+    print -r -- "}"
+  } > "$tmp" 2>/dev/null || { rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$file" 2>/dev/null || { rm -f "$tmp"; return 1; }
+  return 0
+}
+
+# Resolve a stable color for <main_wt>, using the persisted map.
+# On success: prints the color name and returns 0.
+# On lock/write failure: returns 1 so caller can fall back to hash-only path.
+_cmux_color_assign() {
+  local key=$1
+  if ! _cmux_color_lock; then
+    _cmux_color_log "lock unavailable for $key"
+    return 1
+  fi
+  {
+    _cmux_color_read_map
+    local now existing chosen p c h lru_path lru_ts ts
+    now=$(date +%s)
+    if [[ -n "${_cmux_color_by_path[$key]:-}" ]]; then
+      existing=${_cmux_color_by_path[$key]}
+      _cmux_color_lastused_by_path[$key]=$now
+      _cmux_color_write_map
+      _cmux_color_log "hit $key → $existing"
+      print -r -- "$existing"
+      return 0
+    fi
+    local -A in_use
+    for p in ${(k)_cmux_color_by_path}; do
+      in_use[${_cmux_color_by_path[$p]}]=1
+    done
+    local -a free
+    for c in $_CMUX_COLORS; do
+      [[ -z "${in_use[$c]:-}" ]] && free+=$c
+    done
+    if (( ${#free} > 0 )); then
+      h=$(_cmux_hash_index "$key")
+      chosen=${free[$(( h % ${#free} + 1 ))]}
+      _cmux_color_log "miss $key → $chosen (free=${#free}/16)"
+    else
+      lru_ts=""
+      for p in ${(k)_cmux_color_by_path}; do
+        ts=${_cmux_color_lastused_by_path[$p]}
+        if [[ -z "$lru_ts" || $ts -lt $lru_ts ]]; then
+          lru_ts=$ts
+          lru_path=$p
+        fi
+      done
+      chosen=${_cmux_color_by_path[$lru_path]}
+      unset "_cmux_color_by_path[$lru_path]"
+      unset "_cmux_color_lastused_by_path[$lru_path]"
+      _cmux_color_log "evict $lru_path → reusing $chosen for $key"
+    fi
+    _cmux_color_by_path[$key]=$chosen
+    _cmux_color_lastused_by_path[$key]=$now
+    _cmux_color_write_map
+    print -r -- "$chosen"
+  } always {
+    _cmux_color_unlock
+  }
+}
+
+# _cmux_color_for_target <target> — print a palette color name. Always succeeds.
+# Stable per repo (keyed by main-worktree path) when the persisted map is
+# writable; falls back to hash-only (today's behavior) on any I/O failure;
+# random for non-git targets.
 _cmux_color_for_target() {
-  local target=$1 toplevel common_dir main_wt idx
+  local target=$1 toplevel common_dir main_wt idx color
   if toplevel=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null); then
     common_dir=$(git -C "$target" rev-parse --git-common-dir 2>/dev/null)
     [[ "$common_dir" != /* ]] && common_dir="$toplevel/$common_dir"
     main_wt=${${common_dir:A}:h}
+    if color=$(_cmux_color_assign "$main_wt"); then
+      print -r -- "$color"
+      return
+    fi
     idx=$(_cmux_hash_index "$main_wt")
   else
     idx=$(( RANDOM % 16 ))
@@ -222,4 +373,102 @@ cm-wt-go() {
 
   echo "Switched to worktree: $selected_worktree"
   ls -a
+}
+
+# _cmux_color_key_for <path> — echo the canonical color-map key (main worktree
+# path) for <path>, or just the realpath if <path> isn't in a git repo.
+_cmux_color_key_for() {
+  local target=$1 toplevel common_dir
+  if toplevel=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null); then
+    common_dir=$(git -C "$target" rev-parse --git-common-dir 2>/dev/null)
+    [[ "$common_dir" != /* ]] && common_dir="$toplevel/$common_dir"
+    print -r -- "${${common_dir:A}:h}"
+  else
+    print -r -- "${target:A}"
+  fi
+}
+
+# cmux-color show [path]   — print the resolved color and the key it's stored under
+# cmux-color list          — list all assignments, oldest first
+# cmux-color forget <path> — drop an assignment so the next cm-cd re-rolls it
+cmux-color() {
+  local sub=${1:-show}
+  (( $# > 0 )) && shift
+  case "$sub" in
+    show)
+      local target=${1:-$PWD} expanded
+      expanded="${~target}"
+      target=${expanded:A}
+      if [[ ! -d "$target" ]]; then
+        echo "cmux-color: not a directory: ${1:-$PWD}" >&2
+        return 2
+      fi
+      local key color
+      key=$(_cmux_color_key_for "$target")
+      color=$(_cmux_color_for_target "$target")
+      printf 'target: %s\n' "$target"
+      printf 'key:    %s\n' "$key"
+      printf 'color:  %s\n' "$color"
+      ;;
+    list)
+      _cmux_color_lock || { echo "cmux-color: could not acquire lock" >&2; return 1; }
+      {
+        _cmux_color_read_map
+        local p
+        local -a rows
+        for p in ${(k)_cmux_color_by_path}; do
+          rows+=("${_cmux_color_lastused_by_path[$p]}	${_cmux_color_by_path[$p]}	$p")
+        done
+        if (( ${#rows} == 0 )); then
+          echo "(no assignments)"
+        else
+          printf '%-12s %-10s %s\n' "LAST_USED" "COLOR" "PATH"
+          print -rl -- ${(on)rows} | awk -F'\t' '{printf "%-12s %-10s %s\n", $1, $2, $3}'
+        fi
+      } always {
+        _cmux_color_unlock
+      }
+      ;;
+    forget)
+      if [[ -z "${1:-}" ]]; then
+        echo "usage: cmux-color forget <path>" >&2
+        return 2
+      fi
+      local target expanded key
+      expanded="${~1}"
+      target=${expanded:A}
+      [[ -z "$target" ]] && target=$1
+      _cmux_color_lock || { echo "cmux-color: could not acquire lock" >&2; return 1; }
+      {
+        _cmux_color_read_map
+        key=$(_cmux_color_key_for "$target")
+        if [[ -n "${_cmux_color_by_path[$key]:-}" ]]; then
+          local old=${_cmux_color_by_path[$key]}
+          unset "_cmux_color_by_path[$key]"
+          unset "_cmux_color_lastused_by_path[$key]"
+          _cmux_color_write_map
+          echo "forgot: $key (was $old)"
+        else
+          echo "not found: $key"
+        fi
+      } always {
+        _cmux_color_unlock
+      }
+      ;;
+    -h|--help|help)
+      cat >&2 <<'EOF'
+Usage:
+  cmux-color show [path]   Print resolved color for <path> (default: $PWD).
+  cmux-color list          List all repo→color assignments, oldest first.
+  cmux-color forget <path> Drop a repo's assignment so it gets re-rolled next time.
+
+Set CMUX_COLOR_DEBUG=1 to trace lock acquisition and picker decisions.
+State file: ${XDG_CONFIG_HOME:-$HOME/.config}/cmux/colors.json
+EOF
+      ;;
+    *)
+      echo "cmux-color: unknown subcommand '$sub' (try 'cmux-color help')" >&2
+      return 2
+      ;;
+  esac
 }
