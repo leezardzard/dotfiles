@@ -75,14 +75,15 @@ To add or remove a package, edit the relevant `scripts/brewfiles/Brewfile.<categ
 
 1. **Powerlevel10k** — Clones into Oh My Zsh custom themes if missing.
 2. **`.zshrc`** — Backs up existing `~/.zshrc` to `~/.zshrc.backup`, copies `template/.zshrc` to `~/.zshrc`, sets `ZSH_THEME` to Powerlevel10k, then sources it.
-3. **Zsh plugins** — Installs and sources zsh-autosuggestions via Homebrew.
-4. **Tools** — Installs bat, zoxide, eza, dust, atuin, fzf, fd; clones `fzf-git.sh` to `~/fzf-git.sh` if missing.
-5. **Git** — If git-delta not installed: installs it and copies `scripts/zsh-config/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
-6. **Other** — tlrc, thefuck, fnm, go.
-7. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.
-8. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/scripts/zsh-config/load.zsh`.
+3. **`.p10k.zsh`** — Symlinks `~/.p10k.zsh` to the repo's `.p10k.zsh` (backing up any existing file) so the p10k config is tracked and `p10k configure` writes through to the repo.
+4. **Zsh plugins** — Installs and sources zsh-autosuggestions via Homebrew.
+5. **Tools** — Installs bat, zoxide, eza, dust, atuin, fzf, fd; clones `fzf-git.sh` to `~/fzf-git.sh` if missing.
+6. **Git** — If git-delta not installed: installs it and copies `scripts/zsh-config/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
+7. **Other** — tlrc, thefuck, fnm, go.
+8. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.
+9. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/scripts/zsh-config/load.zsh`.
 
-After this, new shells load the modular zsh config (keybindings, tools, dev, git worktree `wt`, utilities). Customize the prompt with `p10k configure`.
+After this, new shells load the modular zsh config (keybindings, tools, dev, git worktree `wt`, utilities). Customize the prompt with `p10k configure` — writes go through the symlink to `<repo>/.p10k.zsh`.
 
 ---
 

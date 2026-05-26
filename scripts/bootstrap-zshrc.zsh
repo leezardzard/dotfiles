@@ -21,6 +21,24 @@ echo "Edited line in ~/.zshrc :"
 cat ~/.zshrc | grep -m 1 ZSH_THEME
 
 ###############################################################################
+# Symlink ~/.p10k.zsh -> repo's .p10k.zsh so p10k config is tracked here.
+# Back up any existing real file first; idempotent if the symlink already
+# points at the right target.
+###############################################################################
+P10K_REPO="$(pwd)/.p10k.zsh"
+if [ -e "$P10K_REPO" ]; then
+  if [ -L ~/.p10k.zsh ] && [ "$(readlink ~/.p10k.zsh)" = "$P10K_REPO" ]; then
+    echo "~/.p10k.zsh already linked to $P10K_REPO"
+  else
+    if [ -e ~/.p10k.zsh ] || [ -L ~/.p10k.zsh ]; then
+      mv ~/.p10k.zsh ~/.p10k.zsh.backup-$(date +%Y%m%d-%H%M%S)
+    fi
+    ln -s "$P10K_REPO" ~/.p10k.zsh
+    echo "Linked ~/.p10k.zsh -> $P10K_REPO"
+  fi
+fi
+
+###############################################################################
 # Install zsh plugins
 ###############################################################################
 brew install zsh-autosuggestions

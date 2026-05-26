@@ -62,6 +62,7 @@ To customize the prompt, run `p10k configure`. To add or remove packages, edit t
 scripts/           # Bootstrap and zsh-config (keybindings, tools, dev, git, utilities)
 bin/               # Executable helper scripts (e.g. cmux-cd-all)
 template/.zshrc    # Base .zshrc copied to ~/.zshrc; load.zsh is appended
+.p10k.zsh          # Powerlevel10k config; symlinked from ~/.p10k.zsh
 .config/nvim/      # Neovim config (Lazy.nvim, plugins, LSP)
 .config/cmux/      # cmux config (cmux.json with pane-layout commands and actions)
 keyboard/          # Optional Via keymap (e.g. RAMA WORKS KARA)
