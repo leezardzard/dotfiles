@@ -51,7 +51,7 @@ _cmux_color_lock_dir() {
 }
 
 _cmux_color_log() {
-  [[ -n "${CMUX_COLOR_DEBUG:-}" ]] && print -r -- "cmux-color: $*" >&2
+  [[ -n "${CMUX_COLOR_DEBUG:-}" ]] && print -r -- "cm color: $*" >&2
 }
 
 # Acquire mkdir-based mutex with 2s budget; recover stale locks older than 5s.
@@ -245,32 +245,28 @@ _cmux_workspace_name() {
   fi
 }
 
-# cm-cd [path] <2|3|4|5|6>
+# _cm_cd [path] <2|3|4|5|6>
 #
-# Open a new cmux workspace with a predefined split layout.
-# Path defaults to $PWD; literal paths are tried first, then `zoxide query`.
-# Workspace is named "<repo>:<branch>" (description = basename of target) if
-# target is inside a git repo; otherwise named after the directory basename.
-#
-# Examples:
-#   cm-cd ~/.dotfiles 4   # 2x2 grid in ~/.dotfiles
-#   cm-cd dotf 3          # zoxide fuzzy match -> ~/.dotfiles
-#   cm-cd 2               # side-by-side in $PWD
-cm-cd() {
+# Implementation for `cm cd`. Open a new cmux workspace with a predefined
+# split layout. Path defaults to $PWD; literal paths are tried first, then
+# `zoxide query`. Workspace is named "<repo>:<branch>" (description = basename
+# of target) if target is inside a git repo; otherwise named after the
+# directory basename.
+_cm_cd() {
   local target n
   case $# in
     1) target=$PWD; n=$1 ;;
     2) target=$1;   n=$2 ;;
-    *) echo "usage: cm-cd [path] <2|3|4|5|6>" >&2; return 2 ;;
+    *) echo "usage: cm cd [path] <2|3|4|5|6>" >&2; return 2 ;;
   esac
 
   if [[ ! "$n" =~ ^[2-6]$ ]]; then
-    echo "usage: cm-cd [path] <2|3|4|5|6>" >&2
+    echo "usage: cm cd [path] <2|3|4|5|6>" >&2
     return 2
   fi
 
   # Resolve target: try literal path first (with ~ expansion + realpath),
-  # then fall back to `zoxide query` so `cm-cd dotf 4` finds ~/.dotfiles.
+  # then fall back to `zoxide query` so `cm cd dotf 4` finds ~/.dotfiles.
   local expanded="${~target}"
   local resolved=${expanded:A}
   if [[ -d "$resolved" ]]; then
@@ -280,7 +276,7 @@ cm-cd() {
        [[ -d "$resolved" ]]; then
     target="$resolved"
   else
-    echo "cm-cd: not a directory: $target" >&2
+    echo "cm cd: not a directory: $target" >&2
     return 2
   fi
 
@@ -326,13 +322,13 @@ cm-cd() {
   fi
 }
 
-# cm-wt-go
+# _cm_wt
 #
-# Fzf-pick a git worktree and broadcast `cd <path>` to every terminal surface
-# in the current cmux workspace. Local shell cd's first; broadcast follows.
-# When not running inside a cmux workspace (no panes found), the local cd
-# still happens and the broadcast is skipped with a notice.
-cm-wt-go() {
+# Implementation for `cm wt`. Fzf-pick a git worktree and broadcast `cd <path>`
+# to every terminal surface in the current cmux workspace. Local shell cd's
+# first; broadcast follows. When not running inside a cmux workspace (no panes
+# found), the local cd still happens and the broadcast is skipped with a notice.
+_cm_wt() {
   if ! _worktree_git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
     echo "Not in a git repository."
     return 1
@@ -346,7 +342,7 @@ cm-wt-go() {
   [[ -z "$selected_worktree" ]] && return 0
 
   if ! cd "$selected_worktree"; then
-    echo "cm-wt-go: failed to cd into $selected_worktree" >&2
+    echo "cm wt: failed to cd into $selected_worktree" >&2
     return 1
   fi
 
@@ -356,7 +352,7 @@ cm-wt-go() {
     broadcaster="$HOME/.dotfiles/bin/cmux-cd-all"
 
   if [[ -z "$broadcaster" ]]; then
-    echo "cm-wt-go: cmux-cd-all not found — local cd only" >&2
+    echo "cm wt: cmux-cd-all not found — local cd only" >&2
   else
     if "$broadcaster" "$selected_worktree" 2>/dev/null; then
       # Broadcast succeeded → we're in a cmux workspace. Rename it to match
@@ -367,7 +363,7 @@ cm-wt-go() {
         _cmux_bin rename-workspace "$new_ws_name" >/dev/null 2>&1 || true
       fi
     else
-      echo "cm-wt-go: not in a cmux workspace — local cd only" >&2
+      echo "cm wt: not in a cmux workspace — local cd only" >&2
     fi
   fi
 
@@ -388,10 +384,10 @@ _cmux_color_key_for() {
   fi
 }
 
-# cmux-color show [path]   — print the resolved color and the key it's stored under
-# cmux-color list          — list all assignments, oldest first
-# cmux-color forget <path> — drop an assignment so the next cm-cd re-rolls it
-cmux-color() {
+# _cm_color show [path]   — print the resolved color and the key it's stored under
+# _cm_color list          — list all assignments, oldest first
+# _cm_color forget <path> — drop an assignment so the next `cm cd` re-rolls it
+_cm_color() {
   local sub=${1:-show}
   (( $# > 0 )) && shift
   case "$sub" in
@@ -400,7 +396,7 @@ cmux-color() {
       expanded="${~target}"
       target=${expanded:A}
       if [[ ! -d "$target" ]]; then
-        echo "cmux-color: not a directory: ${1:-$PWD}" >&2
+        echo "cm color: not a directory: ${1:-$PWD}" >&2
         return 2
       fi
       local key color
@@ -411,7 +407,7 @@ cmux-color() {
       printf 'color:  %s\n' "$color"
       ;;
     list)
-      _cmux_color_lock || { echo "cmux-color: could not acquire lock" >&2; return 1; }
+      _cmux_color_lock || { echo "cm color: could not acquire lock" >&2; return 1; }
       {
         _cmux_color_read_map
         local p
@@ -431,14 +427,14 @@ cmux-color() {
       ;;
     forget)
       if [[ -z "${1:-}" ]]; then
-        echo "usage: cmux-color forget <path>" >&2
+        echo "usage: cm color forget <path>" >&2
         return 2
       fi
       local target expanded key
       expanded="${~1}"
       target=${expanded:A}
       [[ -z "$target" ]] && target=$1
-      _cmux_color_lock || { echo "cmux-color: could not acquire lock" >&2; return 1; }
+      _cmux_color_lock || { echo "cm color: could not acquire lock" >&2; return 1; }
       {
         _cmux_color_read_map
         key=$(_cmux_color_key_for "$target")
@@ -458,17 +454,65 @@ cmux-color() {
     -h|--help|help)
       cat >&2 <<'EOF'
 Usage:
-  cmux-color show [path]   Print resolved color for <path> (default: $PWD).
-  cmux-color list          List all repo→color assignments, oldest first.
-  cmux-color forget <path> Drop a repo's assignment so it gets re-rolled next time.
+  cm color show [path]   Print resolved color for <path> (default: $PWD).
+  cm color list          List all repo→color assignments, oldest first.
+  cm color forget <path> Drop a repo's assignment so it gets re-rolled next time.
 
 Set CMUX_COLOR_DEBUG=1 to trace lock acquisition and picker decisions.
 State file: ${XDG_CONFIG_HOME:-$HOME/.config}/cmux/colors.json
 EOF
       ;;
     *)
-      echo "cmux-color: unknown subcommand '$sub' (try 'cmux-color help')" >&2
+      echo "cm color: unknown subcommand '$sub' (try 'cm color help')" >&2
       return 2
       ;;
   esac
+}
+
+# cm - cmux quick-commands (dispatcher)
+#
+# Usage:
+#   cm cd [path] <2|3|4|5|6>   Open new workspace with N-pane layout.
+#   cm wt                      Fzf-pick a worktree; broadcast cd to all panes.
+#   cm color show [path]       Resolved color for path (default: $PWD).
+#   cm color list              List all repo→color assignments, oldest first.
+#   cm color forget <path>     Drop a repo's assignment.
+#   cm help                    Show this help.
+#
+# Examples:
+#   cm cd ~/.dotfiles 4   # 2x2 grid, workspace ".dotfiles:main"
+#   cm cd dotf 3          # zoxide fuzzy match -> ~/.dotfiles
+#   cm cd 2               # side-by-side in $PWD
+#   cm wt                 # fzf-pick worktree, broadcast cd to all panes
+cm() {
+  local cmd=${1:-help}
+  (( $# > 0 )) && shift
+  case "$cmd" in
+    cd)             _cm_cd "$@" ;;
+    wt)             _cm_wt "$@" ;;
+    color)          _cm_color "$@" ;;
+    help|-h|--help) _cm_help ;;
+    *) echo "cm: unknown subcommand '$cmd' (try 'cm help')" >&2; return 2 ;;
+  esac
+}
+
+_cm_help() {
+  cat >&2 <<'EOF'
+cm - cmux quick-commands
+
+Usage:
+  cm cd [path] <2|3|4|5|6>   Open new workspace with N-pane layout.
+  cm wt                      Fzf-pick a worktree; broadcast cd to all panes.
+  cm color show [path]       Resolved color for path (default: $PWD).
+  cm color list              List all repo→color assignments, oldest first.
+  cm color forget <path>     Drop a repo's assignment.
+  cm help                    Show this help.
+
+Examples:
+  cm cd ~/.dotfiles 4
+  cm cd dotf 3
+  cm cd 2
+  cm wt
+  cm color show
+EOF
 }
