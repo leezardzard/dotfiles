@@ -171,6 +171,17 @@
     }
   },
 
+  // Sidebar chrome — warm-dark Morandi tint to coordinate with the terminal
+  // background. `tintColor` is mixed with the system material at
+  // `tintOpacity`. Higher opacity = more visible tint.
+  "sidebarAppearance": {
+    "tintColor": "#3A3A38",
+    "tintOpacity": 0.35,
+    "matchTerminalBackground": false,
+    "darkModeTintColor": null,
+    "lightModeTintColor": null
+  },
+
   "actions": {
     "layout-2-panes": {
       "type": "workspaceCommand",
