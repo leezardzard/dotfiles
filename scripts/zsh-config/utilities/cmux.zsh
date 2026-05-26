@@ -224,11 +224,12 @@ _cmux_layout_json() {
   esac
 }
 
-# _cmux_workspace_name <target>
-# Echo "<repo>:<branch>" if target is inside a git repo, else basename of target.
-# Repo name = basename of the main worktree (parent of git common dir).
-_cmux_workspace_name() {
-  local target=$1 toplevel common_dir main_wt repo branch
+# _cmux_repo_name <target>
+# Echo the repo name (basename of the main worktree) if target is inside a git
+# repo, else the basename of target. Used as the workspace title; the worktree
+# directory basename is used as the workspace description (set by callers).
+_cmux_repo_name() {
+  local target=$1 toplevel common_dir main_wt
   if ! toplevel=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null); then
     print -r -- "${target:t}"
     return
@@ -236,22 +237,16 @@ _cmux_workspace_name() {
   common_dir=$(git -C "$target" rev-parse --git-common-dir 2>/dev/null)
   [[ "$common_dir" != /* ]] && common_dir="$toplevel/$common_dir"
   main_wt=${${common_dir:A}:h}
-  repo=${main_wt:t}
-  branch=$(git -C "$target" rev-parse --abbrev-ref HEAD 2>/dev/null)
-  if [[ -z "$branch" || "$branch" == "HEAD" ]]; then
-    print -r -- "$repo"
-  else
-    print -r -- "$repo:$branch"
-  fi
+  print -r -- "${main_wt:t}"
 }
 
 # _cm_cd [path] <2|3|4|5|6>
 #
 # Implementation for `cm cd`. Open a new cmux workspace with a predefined
 # split layout. Path defaults to $PWD; literal paths are tried first, then
-# `zoxide query`. Workspace is named "<repo>:<branch>" (description = basename
-# of target) if target is inside a git repo; otherwise named after the
-# directory basename.
+# `zoxide query`. Workspace title is the repo name (basename of main worktree);
+# description is the worktree directory basename. For non-git targets, both
+# fall back to the directory basename.
 _cm_cd() {
   local target n
   case $# in
@@ -281,7 +276,7 @@ _cm_cd() {
   fi
 
   local ws_name layout
-  ws_name=$(_cmux_workspace_name "$target")
+  ws_name=$(_cmux_repo_name "$target")
   layout=$(_cmux_layout_json "$n")
 
   # If we're invoked from a single-pane cmux workspace (typical "fresh tab"
@@ -355,12 +350,18 @@ _cm_wt() {
     echo "cm wt: cmux-cd-all not found — local cd only" >&2
   else
     if "$broadcaster" "$selected_worktree" 2>/dev/null; then
-      # Broadcast succeeded → we're in a cmux workspace. Rename it to match
-      # the new worktree (e.g. ".dotfiles:main" → ".dotfiles:feature-x").
-      local new_ws_name
-      new_ws_name=$(_cmux_workspace_name "$selected_worktree")
+      # Broadcast succeeded → we're in a cmux workspace. Set title to repo name
+      # and description to the worktree directory basename so the card reflects
+      # which worktree this workspace is on.
+      local new_ws_name new_ws_desc
+      new_ws_name=$(_cmux_repo_name "$selected_worktree")
+      new_ws_desc=${selected_worktree:t}
       if [[ -n "$new_ws_name" ]]; then
         _cmux_bin rename-workspace "$new_ws_name" >/dev/null 2>&1 || true
+      fi
+      if [[ -n "$new_ws_desc" ]]; then
+        _cmux_bin workspace-action --action set-description \
+                  --description "$new_ws_desc" >/dev/null 2>&1 || true
       fi
     else
       echo "cm wt: not in a cmux workspace — local cd only" >&2
