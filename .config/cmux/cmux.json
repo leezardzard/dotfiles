@@ -145,6 +145,32 @@
   //     "openTerminalLinksInCmuxBrowser" : true
   //   },
 
+  // Morandi-palette overrides for the 16 workspace colors used by `cm cd`
+  // on the leftRail card, plus focus (selectionColor) and notification badge.
+  "workspaceColors": {
+    "indicatorStyle": "leftRail",
+    "selectionColor": "#BFB5A3",
+    "notificationBadgeColor": "#A88577",
+    "colors": {
+      "Red":      "#A88577",
+      "Crimson":  "#8B5F5F",
+      "Orange":   "#B5946F",
+      "Amber":    "#B8A572",
+      "Olive":    "#8E9072",
+      "Green":    "#8AA088",
+      "Teal":     "#7A9999",
+      "Aqua":     "#95B0AE",
+      "Blue":     "#8398B0",
+      "Navy":     "#5C6E92",
+      "Indigo":   "#76769E",
+      "Purple":   "#8B7A93",
+      "Magenta":  "#A07A8B",
+      "Rose":     "#C4A1A5",
+      "Brown":    "#9C826E",
+      "Charcoal": "#6D6B68"
+    }
+  },
+
   "actions": {
     "layout-2-panes": {
       "type": "workspaceCommand",

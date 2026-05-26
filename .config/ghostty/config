@@ -1,0 +1,32 @@
+# Ghostty terminal config.
+#
+# Loaded by cmux (cmux uses Ghostty under the hood) and any standalone Ghostty
+# instance. `cmux reload-config` reloads both this file and ~/.config/cmux/cmux.json
+# in-place — no app restart needed.
+#
+# This file only overrides the ANSI 16-color palette with a Morandi (low-saturation,
+# dusty) scheme. Every CLI tool emitting ANSI 0-15 picks up these tones:
+# p10k cards, `git status`, `eza --color`, `bat`, `htop`, tab-completion menus, etc.
+# Codes 16-255 in the 256-color cube are NOT remapped here.
+#
+# Format: `palette = N=#hex` for slot N (0-15).
+
+# Normal (ANSI 0-7)
+palette = 0=#3A3A38
+palette = 1=#A88577
+palette = 2=#8AA088
+palette = 3=#B8A572
+palette = 4=#8398B0
+palette = 5=#8B7A93
+palette = 6=#7A9999
+palette = 7=#D4CABA
+
+# Bright (ANSI 8-15)
+palette = 8=#6D6B68
+palette = 9=#C4A1A5
+palette = 10=#A4B89F
+palette = 11=#D2C2A3
+palette = 12=#A0B3C8
+palette = 13=#A89AAF
+palette = 14=#9CB3B3
+palette = 15=#E5DDD0

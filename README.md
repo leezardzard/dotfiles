@@ -65,6 +65,7 @@ template/.zshrc    # Base .zshrc copied to ~/.zshrc; load.zsh is appended
 .p10k.zsh          # Powerlevel10k config; symlinked from ~/.p10k.zsh
 .config/nvim/      # Neovim config (Lazy.nvim, plugins, LSP)
 .config/cmux/      # cmux config (cmux.json with pane-layout commands and actions)
+.config/ghostty/   # Ghostty terminal config (Morandi ANSI palette); symlinked from ~/.config/ghostty
 keyboard/          # Optional Via keymap (e.g. RAMA WORKS KARA)
 .tmux.conf         # Tmux config
 ```

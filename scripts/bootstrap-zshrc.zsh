@@ -39,6 +39,25 @@ if [ -e "$P10K_REPO" ]; then
 fi
 
 ###############################################################################
+# Symlink ~/.config/ghostty -> repo's .config/ghostty so Ghostty terminal
+# settings (Morandi ANSI palette, etc.) are tracked here. Mirrors the same
+# pattern as ~/.config/cmux. Idempotent; backs up any existing real directory.
+###############################################################################
+GHOSTTY_REPO="$(pwd)/.config/ghostty"
+if [ -d "$GHOSTTY_REPO" ]; then
+  mkdir -p ~/.config
+  if [ -L ~/.config/ghostty ] && [ "$(readlink ~/.config/ghostty)" = "$GHOSTTY_REPO" ]; then
+    echo "~/.config/ghostty already linked to $GHOSTTY_REPO"
+  else
+    if [ -e ~/.config/ghostty ] || [ -L ~/.config/ghostty ]; then
+      mv ~/.config/ghostty ~/.config/ghostty.backup-$(date +%Y%m%d-%H%M%S)
+    fi
+    ln -s "$GHOSTTY_REPO" ~/.config/ghostty
+    echo "Linked ~/.config/ghostty -> $GHOSTTY_REPO"
+  fi
+fi
+
+###############################################################################
 # Install zsh plugins
 ###############################################################################
 brew install zsh-autosuggestions
