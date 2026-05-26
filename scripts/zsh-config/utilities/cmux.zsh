@@ -384,6 +384,51 @@ _cmux_color_key_for() {
   fi
 }
 
+# Apply the persisted color map to every open cmux workspace in the current
+# window. Matches each workspace's "<repo>:<branch>" name (repo = basename of
+# the main worktree) against a map entry's key basename, then calls
+# `workspace-action --action set-color`. Best-effort — silent if cmux isn't
+# reachable or a workspace doesn't match any map entry. Prints a count of
+# how many were applied (only when >0).
+_cmux_apply_map_to_open_workspaces() {
+  local ws_output
+  ws_output=$(_cmux_bin list-workspaces 2>/dev/null) || return 0
+  [[ -z "$ws_output" ]] && return 0
+  local -A basename_to_color
+  if _cmux_color_lock; then
+    {
+      _cmux_color_read_map
+      local k
+      for k in ${(k)_cmux_color_by_path}; do
+        basename_to_color[${k:t}]=${_cmux_color_by_path[$k]}
+      done
+    } always {
+      _cmux_color_unlock
+    }
+  fi
+  (( ${#basename_to_color} == 0 )) && return 0
+  local applied=0 line ws_ref ws_name ws_repo color
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    ws_ref=$(print -r -- "$line" | awk '{for(i=1;i<=NF;i++) if($i~/^workspace:/){print $i; exit}}')
+    [[ -z "$ws_ref" ]] && continue
+    ws_name=$(print -r -- "$line" | awk -v ref="$ws_ref" '{
+      for (i=1; i<=NF; i++) if ($i == ref) { print $(i+1); exit }
+    }')
+    [[ -z "$ws_name" ]] && continue
+    ws_repo=${ws_name%%:*}
+    color=${basename_to_color[$ws_repo]:-}
+    if [[ -n "$color" ]]; then
+      if _cmux_bin workspace-action --action set-color \
+                   --workspace "$ws_ref" --color "$color" >/dev/null 2>&1; then
+        applied=$((applied + 1))
+      fi
+    fi
+  done <<< "$ws_output"
+  (( applied > 0 )) && printf 'applied live to %d open workspace(s)\n' $applied
+  return 0
+}
+
 # _cm_color show [path]   — print the resolved color and the key it's stored under
 # _cm_color list          — list all assignments, oldest first
 # _cm_color forget <path> — drop an assignment so the next `cm cd` re-rolls it
@@ -451,12 +496,114 @@ _cm_color() {
         _cmux_color_unlock
       }
       ;;
+    dice)
+      if [[ "${1:-}" == "all" ]]; then
+        # Bulk re-roll every entry in the persisted map. Best-effort
+        # uniqueness: each palette color is used once before any is reused;
+        # each entry's new color is guaranteed != its current color (unless
+        # impossible). Keys are shuffled so the pick order is fair across
+        # repos. If we're inside a cmux workspace, re-apply the current
+        # workspace's new color via set-color.
+        _cmux_color_lock || { echo "cm color dice all: could not acquire lock" >&2; return 1; }
+        local rolled=0
+        {
+          _cmux_color_read_map
+          local -a keys
+          keys=(${(k)_cmux_color_by_path})
+          if (( ${#keys} == 0 )); then
+            echo "(no assignments to roll)"
+          else
+            # Fisher-Yates shuffle of keys.
+            local -a shuffled
+            shuffled=("${keys[@]}")
+            local i j tmp
+            for (( i=${#shuffled}; i>=2; i-- )); do
+              j=$(( RANDOM % i + 1 ))
+              tmp=${shuffled[i]}; shuffled[i]=${shuffled[j]}; shuffled[j]=$tmp
+            done
+            local -A used_now
+            local now=$(date +%s)
+            local k old chosen c
+            local -a candidates
+            printf '%-10s %-10s %s\n' "OLD" "NEW" "PATH"
+            for k in $shuffled; do
+              old=${_cmux_color_by_path[$k]:-}
+              candidates=()
+              # Pass 1: unused-this-roll AND != old.
+              for c in $_CMUX_COLORS; do
+                [[ -z "${used_now[$c]:-}" && "$c" != "$old" ]] && candidates+=$c
+              done
+              # Pass 2: any != old (palette exhausted on this roll).
+              if (( ${#candidates} == 0 )); then
+                for c in $_CMUX_COLORS; do
+                  [[ "$c" != "$old" ]] && candidates+=$c
+                done
+              fi
+              (( ${#candidates} == 0 )) && candidates=($_CMUX_COLORS)
+              chosen=${candidates[$(( RANDOM % ${#candidates} + 1 ))]}
+              _cmux_color_by_path[$k]=$chosen
+              _cmux_color_lastused_by_path[$k]=$now
+              used_now[$chosen]=1
+              rolled=$((rolled + 1))
+              printf '%-10s %-10s %s\n' "$old" "$chosen" "$k"
+            done
+            _cmux_color_write_map
+            printf '\nrolled %d assignment(s)\n' $rolled
+          fi
+        } always {
+          _cmux_color_unlock
+        }
+        # Apply the new colors to every matching open workspace (not just
+        # the current one — multiple workspaces of the same repo should
+        # share the new color since they share one persisted entry).
+        _cmux_apply_map_to_open_workspaces
+        return 0
+      fi
+      # Re-roll the current cmux workspace's card color to a random palette
+      # entry (different from the current one), persist it for this repo,
+      # and apply it via `cmux workspace-action --action set-color`.
+      local ws=${CMUX_WORKSPACE_ID:-}
+      if [[ -z "$ws" ]]; then
+        echo "cm color dice: not in a cmux workspace (CMUX_WORKSPACE_ID unset)" >&2
+        return 1
+      fi
+      local key chosen current=""
+      key=$(_cmux_color_key_for "$PWD")
+      _cmux_color_lock || { echo "cm color dice: could not acquire lock" >&2; return 1; }
+      {
+        _cmux_color_read_map
+        current=${_cmux_color_by_path[$key]:-}
+        local -a candidates
+        local c
+        for c in $_CMUX_COLORS; do
+          [[ "$c" != "$current" ]] && candidates+=$c
+        done
+        (( ${#candidates} == 0 )) && candidates=($_CMUX_COLORS)
+        chosen=${candidates[$(( RANDOM % ${#candidates} + 1 ))]}
+        _cmux_color_by_path[$key]=$chosen
+        _cmux_color_lastused_by_path[$key]=$(date +%s)
+        _cmux_color_write_map
+      } always {
+        _cmux_color_unlock
+      }
+      if [[ -n "$current" ]]; then
+        printf 'rolled: %s -> %s\n' "$current" "$chosen"
+      else
+        printf 'rolled: %s\n' "$chosen"
+      fi
+      # Apply to every open workspace (including the current). Siblings of
+      # the same repo all share one persisted entry, so they should all
+      # update — not just the workspace we ran the command in.
+      _cmux_apply_map_to_open_workspaces
+      ;;
     -h|--help|help)
       cat >&2 <<'EOF'
 Usage:
   cm color show [path]   Print resolved color for <path> (default: $PWD).
   cm color list          List all repo→color assignments, oldest first.
   cm color forget <path> Drop a repo's assignment so it gets re-rolled next time.
+  cm color dice          Re-roll the current cmux workspace's card color.
+  cm color dice all      Re-roll every entry in the persisted map.
 
 Set CMUX_COLOR_DEBUG=1 to trace lock acquisition and picker decisions.
 State file: ${XDG_CONFIG_HOME:-$HOME/.config}/cmux/colors.json
@@ -477,6 +624,8 @@ EOF
 #   cm color show [path]       Resolved color for path (default: $PWD).
 #   cm color list              List all repo→color assignments, oldest first.
 #   cm color forget <path>     Drop a repo's assignment.
+#   cm color dice              Re-roll the current workspace's card color.
+#   cm color dice all          Re-roll every entry in the persisted map.
 #   cm help                    Show this help.
 #
 # Examples:
@@ -484,6 +633,8 @@ EOF
 #   cm cd dotf 3          # zoxide fuzzy match -> ~/.dotfiles
 #   cm cd 2               # side-by-side in $PWD
 #   cm wt                 # fzf-pick worktree, broadcast cd to all panes
+#   cm color dice         # random new card color for this workspace
+#   cm color dice all     # bulk re-roll every tracked repo
 cm() {
   local cmd=${1:-help}
   (( $# > 0 )) && shift
@@ -506,6 +657,8 @@ Usage:
   cm color show [path]       Resolved color for path (default: $PWD).
   cm color list              List all repo→color assignments, oldest first.
   cm color forget <path>     Drop a repo's assignment.
+  cm color dice              Re-roll the current workspace's card color.
+  cm color dice all          Re-roll every entry in the persisted map.
   cm help                    Show this help.
 
 Examples:
@@ -514,5 +667,7 @@ Examples:
   cm cd 2
   cm wt
   cm color show
+  cm color dice
+  cm color dice all
 EOF
 }

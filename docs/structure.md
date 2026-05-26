@@ -38,7 +38,7 @@ Directory layout and what each part does.
 | `git/gitconfig` | Delta pager config; copied to `~/.gitconfig` when git-delta is first installed. |
 | `git/worktree.zsh` | **wt** — fzf-based Git worktree commands (`wt add`, `wt go`, `wt remote`, `wt sync`, `wt rm`, etc.). |
 | `utilities/ffmpeg.zsh` | FFmpeg-related helpers. |
-| `utilities/cmux.zsh` | **cm** — cmux quick-commands dispatcher. **cm cd** — pane-layout quick-commands for cmux (git-aware workspace naming). **cm wt** — fzf-pick a worktree and broadcast `cd` to every pane in the current cmux workspace. **cm color** — inspect/manage the persisted repo→color map. |
+| `utilities/cmux.zsh` | **cm** — cmux quick-commands dispatcher. **cm cd** — pane-layout quick-commands for cmux (git-aware workspace naming). **cm wt** — fzf-pick a worktree and broadcast `cd` to every pane in the current cmux workspace. **cm color** — inspect/manage the persisted repo→color map (`show`, `list`, `forget`, `dice` to re-roll the current workspace's card color, `dice all` to bulk re-roll every tracked repo). |
 
 ## `.config/nvim/`
 

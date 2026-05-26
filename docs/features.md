@@ -79,6 +79,10 @@ When invoked from a single-pane cmux workspace (typical "fresh tab" starter), `c
 
 `cm wt` composes the worktree picker (`wt go`) with the pane broadcaster. It fzf-picks a git worktree from `git worktree list`, `cd`s the calling shell into it, runs `cmux-cd-all <path>` so every other pane in the current workspace follows, then renames the cmux workspace to the new `<repo>:<branch>` (matching `cm cd`'s naming). Outside a cmux workspace it falls back to a local `cd` with a notice; outside a git repo it exits with the same `Not in a git repository.` error as `wt go`.
 
+`cm color dice` re-rolls the current cmux workspace's card color: picks a random palette entry different from the current one, persists the new assignment for this repo in `~/.config/cmux/colors.json` (so future `cm cd` calls reuse it), then applies the persisted map to every open workspace in the current window via `cmux workspace-action --action set-color`. Because the persisted key is the main worktree path (shared across all worktrees and panes of a repo), sibling workspaces of the same repo also pick up the new color in the same call. Requires `CMUX_WORKSPACE_ID` (only set inside cmux terminals). Pair with `cm color show` to confirm and `cm color list` to inspect the full map.
+
+`cm color dice all` bulk-rerolls every entry in the persisted map. Keys are shuffled (Fisher-Yates) so the pick order is fair; each of the 16 palette colors is used once before any is reused; each entry's new color is guaranteed different from its old one. Prints an `OLD NEW PATH` table, then sweeps every open workspace in the current window and re-applies its repo's new color — so all live workspaces (across multiple repos and multiple worktrees of the same repo) update at once. Workspaces in other cmux windows are not visited; run dice from each window if you have more than one.
+
 ## Neovim
 
 The repo includes a full Neovim config under `.config/nvim/`:
