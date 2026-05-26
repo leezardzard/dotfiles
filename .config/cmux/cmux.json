@@ -349,6 +349,22 @@
     }
   ],
 
+  "shortcuts": {
+    "bindings": {
+      // Free up cmd+shift+[ / cmd+shift+] from the surface (tab-in-pane)
+      // shortcuts so they can be reused for pane focus below.
+      "nextSurface": "unbound",
+      "prevSurface": "unbound",
+
+      // Directional pane focus on cmd+shift+arrows. Overrides the defaults
+      // (cmd+opt+arrows) which conflict with Rectangle/macOS in this setup.
+      "focusLeft":  "cmd+shift+left",
+      "focusRight": "cmd+shift+right",
+      "focusUp":    "cmd+shift+up",
+      "focusDown":  "cmd+shift+down"
+    }
+  },
+
   //   "shortcuts" : {
   //     "bindings" : {
   //       "closeOtherTabsInPane" : "cmd+opt+t",
