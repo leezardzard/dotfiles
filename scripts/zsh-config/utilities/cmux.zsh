@@ -16,6 +16,41 @@ _cmux_bin() {
   "$_CMUX_BIN" "$@"
 }
 
+# Named colors accepted by `cmux workspace-action --action set-color`.
+typeset -ga _CMUX_COLORS=(Red Crimson Orange Amber Olive Green Teal Aqua Blue Navy Indigo Purple Magenta Rose Brown Charcoal)
+
+# _cmux_hash_index <string> — print 0..15 derived from md5 of <string>.
+_cmux_hash_index() {
+  local hex=""
+  if command -v md5 >/dev/null 2>&1; then
+    hex=$(print -n -- "$1" | md5 -q 2>/dev/null) || hex=""
+  fi
+  if [[ -z "$hex" ]] && command -v md5sum >/dev/null 2>&1; then
+    hex=$(print -n -- "$1" | md5sum 2>/dev/null | cut -c1-8)
+  fi
+  if [[ -z "$hex" ]] && command -v cksum >/dev/null 2>&1; then
+    hex=$(print -n -- "$1" | cksum | awk '{printf "%08x", $1}')
+  fi
+  [[ -z "$hex" ]] && { printf '0\n'; return; }
+  printf '%d\n' $((16#${hex:0:1}))
+}
+
+# _cmux_color_for_target <target> — print a palette color name.
+# Deterministic from the main worktree path when <target> is in a git repo;
+# random otherwise. Always succeeds (falls back to a fixed color).
+_cmux_color_for_target() {
+  local target=$1 toplevel common_dir main_wt idx
+  if toplevel=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null); then
+    common_dir=$(git -C "$target" rev-parse --git-common-dir 2>/dev/null)
+    [[ "$common_dir" != /* ]] && common_dir="$toplevel/$common_dir"
+    main_wt=${${common_dir:A}:h}
+    idx=$(_cmux_hash_index "$main_wt")
+  else
+    idx=$(( RANDOM % 16 ))
+  fi
+  print -r -- "${_CMUX_COLORS[idx+1]}"
+}
+
 # _cmux_layout_json <n> — emit the layout JSON for n panes.
 _cmux_layout_json() {
   local n=$1
@@ -118,8 +153,19 @@ cm-cd() {
     --layout "$layout"
     --focus true
   )
-  # Discard stdout (`OK workspace:N`); errors still surface via stderr.
-  _cmux_bin "${args[@]}" >/dev/null
+  # Capture stdout (`OK workspace:N`) so we can color the new workspace.
+  # Errors still surface via stderr.
+  local out ws_ref=""
+  out=$(_cmux_bin "${args[@]}")
+  [[ "$out" =~ 'workspace:[0-9]+' ]] && ws_ref=$MATCH
+
+  # Color the workspace before closing the caller so it's visible immediately.
+  if [[ -n "$ws_ref" ]]; then
+    local color
+    color=$(_cmux_color_for_target "$target")
+    _cmux_bin workspace-action --action set-color \
+              --workspace "$ws_ref" --color "$color" >/dev/null 2>&1 || true
+  fi
 
   # Close the caller workspace AFTER focus has moved to the new one.
   # Background + disown so this shell isn't killed mid-function.
