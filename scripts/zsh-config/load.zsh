@@ -10,7 +10,8 @@ source "$ZSH_CONFIG_DIR/keybindings/bindkey.zsh"
 source "$ZSH_CONFIG_DIR/tools/bat.zsh"
 source "$ZSH_CONFIG_DIR/tools/eza.zsh"
 source "$ZSH_CONFIG_DIR/tools/dust.zsh"
-source "$ZSH_CONFIG_DIR/tools/atuin.zsh"
+# atuin is sourced from ~/.zshrc AFTER oh-my-zsh so OMZ's `bindkey -e` doesn't
+# wipe atuin's ^R / up-arrow widgets off the emacs keymap.
 source "$ZSH_CONFIG_DIR/tools/fzf.zsh"
 source "$ZSH_CONFIG_DIR/tools/fd.zsh"
 source "$ZSH_CONFIG_DIR/tools/fzf-git.zsh"
