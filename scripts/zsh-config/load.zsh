@@ -30,6 +30,5 @@ source "$ZSH_CONFIG_DIR/git/worktree.zsh"
 source "$ZSH_CONFIG_DIR/utilities/ffmpeg.zsh"
 source "$ZSH_CONFIG_DIR/utilities/cmux.zsh"
 
-# zoxide must be initialized last so its precmd/chpwd hooks are registered
-# after every other tool's hooks (zoxide doctor warns otherwise).
+# zoxide last so its chpwd hook is registered after every other tool's hooks.
 source "$ZSH_CONFIG_DIR/tools/zoxide.zsh"
