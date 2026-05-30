@@ -200,6 +200,16 @@ brew install fnm
 brew install go
 
 ###############################################################################
+# Install Claude Code (native installer)
+# https://claude.ai/install.sh — installs the `claude` binary to ~/.local/bin.
+# claude.zsh (sourced via load.zsh) puts ~/.local/bin on PATH. Idempotent: skip
+# when claude is already installed/on PATH.
+###############################################################################
+if [ ! -x "$HOME/.local/bin/claude" ] && ! command -v claude >/dev/null 2>&1; then
+  curl -fsSL https://claude.ai/install.sh | bash
+fi
+
+###############################################################################
 # Load all zsh configurations
 ###############################################################################
 # Prepend the dotfiles source line ABOVE the Powerlevel10k instant-prompt

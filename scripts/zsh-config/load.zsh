@@ -10,6 +10,9 @@ source "$ZSH_CONFIG_DIR/path.zsh"
 source "$ZSH_CONFIG_DIR/keybindings/bindkey.zsh"
 
 # Load tools
+# claude.zsh first: it puts ~/.local/bin on PATH for the native Claude Code
+# install, so the binary resolves before anything downstream needs it.
+source "$ZSH_CONFIG_DIR/tools/claude.zsh"
 source "$ZSH_CONFIG_DIR/tools/bat.zsh"
 source "$ZSH_CONFIG_DIR/tools/eza.zsh"
 source "$ZSH_CONFIG_DIR/tools/dust.zsh"
