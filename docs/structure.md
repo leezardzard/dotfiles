@@ -12,6 +12,7 @@ Directory layout and what each part does.
 | `.config/nvim/` | Neovim config (Lazy.nvim, core, plugins, LSP); symlink to `~/.config/nvim` to use. |
 | `.config/cmux/` | cmux config (`cmux.json` with pane-layout commands and Morandi `workspaceColors.colors` overrides); symlink to `~/.config/cmux` to use. |
 | `.config/ghostty/` | Ghostty terminal config — Morandi ANSI 0-15 palette override (`palette = N=#hex`). Affects every CLI tool emitting ANSI 0-15 (p10k cards, `git status`, `eza --color`, etc.). Symlink to `~/.config/ghostty` to use; `cmux reload-config` reloads in place. |
+| `.claude/statusline-command.sh` | Claude Code status line (four-line "bullet" style; weekly usage via `ccusage`). `~/.claude/statusline-command.sh` is symlinked to this by `bootstrap-zshrc.zsh`, which also rewrites the `statusLine.command` in `~/.claude/settings.json` (and every `claude-switch` profile) to a portable `$HOME`-relative path. Runtime deps: `jq`, `ccusage` (via `npx`). |
 | `bin/` | Executable helper scripts (e.g. `cmux-cd-all`). |
 | `keyboard/` | Optional Via keymap (e.g. RAMA WORKS KARA); not installed by scripts. |
 | `.tmux.conf`, `.tmux.powerline.conf` | Tmux configs; symlink or copy into `$HOME` to use. |
@@ -22,7 +23,7 @@ Directory layout and what each part does.
 |------|-------------|
 | `bootstrap` | System bootstrap: Xcode CLI, Homebrew, CLI packages, casks, Docker, Kubernetes-related tools, mas apps. |
 | `bootstrap-zsh.sh` | Installs zsh, sets default shell, installs Oh My Zsh. |
-| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, fnm, go; appends `source .../load.zsh` to `~/.zshrc`. |
+| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, fnm, go; symlinks `~/.p10k.zsh`, `~/.config/ghostty`, and `~/.claude/statusline-command.sh`; appends `source .../load.zsh` to `~/.zshrc`. |
 | `utils/homebrew_util.zsh` | Helper `is_package_installed` for Homebrew; used by bootstrap. |
 | `zsh-config/` | Modular Zsh config; entry point is `load.zsh`. |
 

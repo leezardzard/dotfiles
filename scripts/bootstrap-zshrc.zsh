@@ -58,6 +58,52 @@ if [ -d "$GHOSTTY_REPO" ]; then
 fi
 
 ###############################################################################
+# Symlink ~/.claude/statusline-command.sh -> repo's .claude/statusline-command.sh
+# so the Claude Code status line is tracked here. Same idempotent pattern as
+# the p10k/ghostty blocks. Then patch any settings.json that references the
+# script so its statusLine command uses $HOME instead of a hardcoded absolute
+# path — that makes it portable across devices (different usernames).
+# Runtime deps: jq (Brewfile core) and ccusage via npx (Node/fnm).
+###############################################################################
+STATUSLINE_REPO="$(pwd)/.claude/statusline-command.sh"
+if [ -f "$STATUSLINE_REPO" ]; then
+  mkdir -p ~/.claude
+  if [ -L ~/.claude/statusline-command.sh ] && [ "$(readlink ~/.claude/statusline-command.sh)" = "$STATUSLINE_REPO" ]; then
+    echo "~/.claude/statusline-command.sh already linked to $STATUSLINE_REPO"
+  else
+    if [ -e ~/.claude/statusline-command.sh ] || [ -L ~/.claude/statusline-command.sh ]; then
+      mv ~/.claude/statusline-command.sh ~/.claude/statusline-command.sh.backup-$(date +%Y%m%d-%H%M%S)
+    fi
+    ln -s "$STATUSLINE_REPO" ~/.claude/statusline-command.sh
+    echo "Linked ~/.claude/statusline-command.sh -> $STATUSLINE_REPO"
+  fi
+
+  # Rewrite any settings.json (default config + every claude-switch profile)
+  # whose statusLine command points at statusline-command.sh, swapping the
+  # hardcoded absolute path for a portable "$HOME"-relative one. Idempotent.
+  if command -v jq >/dev/null 2>&1; then
+    PORTABLE_CMD='bash "$HOME/.claude/statusline-command.sh"'
+    for settings in ~/.claude/settings.json ~/.claude-profiles/*/.claude/settings.json(N); do
+      [ -f "$settings" ] || continue
+      cur=$(jq -r '.statusLine.command // ""' "$settings" 2>/dev/null) || continue
+      case "$cur" in
+        *statusline-command.sh*)
+          if [ "$cur" != "$PORTABLE_CMD" ]; then
+            tmp="$settings.tmp.$$"
+            if jq --arg c "$PORTABLE_CMD" '.statusLine.command = $c' "$settings" >"$tmp" 2>/dev/null; then
+              mv "$tmp" "$settings"
+              echo "Patched statusLine command in $settings"
+            else
+              rm -f "$tmp"
+            fi
+          fi
+          ;;
+      esac
+    done
+  fi
+fi
+
+###############################################################################
 # Install zsh plugins
 ###############################################################################
 brew install zsh-autosuggestions
