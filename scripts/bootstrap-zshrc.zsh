@@ -58,6 +58,57 @@ if [ -d "$GHOSTTY_REPO" ]; then
 fi
 
 ###############################################################################
+# Symlink ~/.claude/statusline-command.sh -> repo's scripts/claude/statusline-command.sh
+# so the Claude Code status line is tracked here. Same idempotent pattern as
+# the p10k/ghostty blocks. Then patch any settings.json that references the
+# script so its statusLine command uses $HOME instead of a hardcoded absolute
+# path — that makes it portable across devices (different usernames).
+# Runtime deps: jq (Brewfile core) and ccusage via npx (Node/fnm).
+###############################################################################
+STATUSLINE_REPO="$(pwd)/scripts/claude/statusline-command.sh"
+if [ -f "$STATUSLINE_REPO" ]; then
+  mkdir -p ~/.claude
+  if [ -L ~/.claude/statusline-command.sh ] && [ "$(readlink ~/.claude/statusline-command.sh)" = "$STATUSLINE_REPO" ]; then
+    echo "~/.claude/statusline-command.sh already linked to $STATUSLINE_REPO"
+  else
+    if [ -e ~/.claude/statusline-command.sh ] || [ -L ~/.claude/statusline-command.sh ]; then
+      mv ~/.claude/statusline-command.sh ~/.claude/statusline-command.sh.backup-$(date +%Y%m%d-%H%M%S)
+    fi
+    ln -s "$STATUSLINE_REPO" ~/.claude/statusline-command.sh
+    echo "Linked ~/.claude/statusline-command.sh -> $STATUSLINE_REPO"
+  fi
+
+  # Point every settings.json (default config + each claude-switch profile) at
+  # the portable "$HOME"-relative statusLine command. Three cases, idempotent:
+  #   - no statusLine set       -> install {type: command, command: ...}
+  #   - ours, hardcoded path    -> rewrite command to the portable form
+  #   - a different custom one  -> leave it untouched
+  if command -v jq >/dev/null 2>&1; then
+    PORTABLE_CMD='bash "$HOME/.claude/statusline-command.sh"'
+    # Ensure the default settings.json exists so we can install into it.
+    [ -f ~/.claude/settings.json ] || echo '{}' >~/.claude/settings.json
+    for settings in ~/.claude/settings.json ~/.claude-profiles/*/.claude/settings.json(N); do
+      [ -f "$settings" ] || continue
+      cur=$(jq -r '.statusLine.command // ""' "$settings" 2>/dev/null) || continue
+      filter="" action=""
+      case "$cur" in
+        "")                      filter='.statusLine = {type: "command", command: $c}'; action="Installed" ;;
+        *statusline-command.sh*) [ "$cur" = "$PORTABLE_CMD" ] && continue
+                                 filter='.statusLine.command = $c';                     action="Patched"   ;;
+        *)                       continue ;;  # different custom status line — leave it
+      esac
+      tmp="$settings.tmp.$$"
+      if jq --arg c "$PORTABLE_CMD" "$filter" "$settings" >"$tmp" 2>/dev/null; then
+        mv "$tmp" "$settings"
+        echo "$action statusLine command in $settings"
+      else
+        rm -f "$tmp"
+      fi
+    done
+  fi
+fi
+
+###############################################################################
 # Install zsh plugins
 ###############################################################################
 brew install zsh-autosuggestions

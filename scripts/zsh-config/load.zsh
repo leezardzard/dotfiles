@@ -3,6 +3,9 @@
 # Load all zsh configuration modules
 ZSH_CONFIG_DIR="${0:A:h}"
 
+# PATH first so every module below (and claude-switch) sees ~/.local/bin.
+source "$ZSH_CONFIG_DIR/path.zsh"
+
 # Load keybindings
 source "$ZSH_CONFIG_DIR/keybindings/bindkey.zsh"
 
@@ -30,6 +33,5 @@ source "$ZSH_CONFIG_DIR/git/worktree.zsh"
 source "$ZSH_CONFIG_DIR/utilities/ffmpeg.zsh"
 source "$ZSH_CONFIG_DIR/utilities/cmux.zsh"
 
-# zoxide must be initialized last so its precmd/chpwd hooks are registered
-# after every other tool's hooks (zoxide doctor warns otherwise).
+# zoxide last so its chpwd hook is registered after every other tool's hooks.
 source "$ZSH_CONFIG_DIR/tools/zoxide.zsh"

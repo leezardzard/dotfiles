@@ -22,7 +22,8 @@ Directory layout and what each part does.
 |------|-------------|
 | `bootstrap` | System bootstrap: Xcode CLI, Homebrew, CLI packages, casks, Docker, Kubernetes-related tools, mas apps. |
 | `bootstrap-zsh.sh` | Installs zsh, sets default shell, installs Oh My Zsh. |
-| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, fnm, go; appends `source .../load.zsh` to `~/.zshrc`. |
+| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, fnm, go; symlinks `~/.p10k.zsh`, `~/.config/ghostty`, and `~/.claude/statusline-command.sh`; appends `source .../load.zsh` to `~/.zshrc`. |
+| `claude/statusline-command.sh` | Claude Code status line (four-line "bullet" style; weekly usage via `ccusage`). `~/.claude/statusline-command.sh` is symlinked to this by `bootstrap-zshrc.zsh`, which also rewrites the `statusLine.command` in `~/.claude/settings.json` (and every `claude-switch` profile) to a portable `$HOME`-relative path. Runtime deps: `jq`, `ccusage` (via `npx`). |
 | `utils/homebrew_util.zsh` | Helper `is_package_installed` for Homebrew; used by bootstrap. |
 | `zsh-config/` | Modular Zsh config; entry point is `load.zsh`. |
 
@@ -30,7 +31,8 @@ Directory layout and what each part does.
 
 | Path | Description |
 |------|-------------|
-| `load.zsh` | Sources keybindings, tools, development, git, and utilities in order. |
+| `load.zsh` | Sources PATH, keybindings, tools, development, git, and utilities in order. |
+| `path.zsh` | Idempotently prepends `~/.local/bin` to `PATH` so the Claude Code native install (`~/.local/bin/claude`) is reachable outside cmux's injected environment. Sourced first by `load.zsh`. |
 | `keybindings/bindkey.zsh` | Custom keybindings. |
 | `tools/` | Tool configs and aliases: bat, zoxide (`cd` → `z`), eza (`ls`), dust (`df`), atuin, fzf, fd, fzf-git, fzf-preview, thefuck. |
 | `development/go.zsh` | Go environment. |
