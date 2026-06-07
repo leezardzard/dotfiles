@@ -31,7 +31,8 @@ Directory layout and what each part does.
 
 | Path | Description |
 |------|-------------|
-| `load.zsh` | Sources keybindings, tools, development, git, and utilities in order. |
+| `load.zsh` | Sources PATH, keybindings, tools, development, git, and utilities in order. |
+| `path.zsh` | Idempotently prepends `~/.local/bin` to `PATH` so the Claude Code native install (`~/.local/bin/claude`) is reachable outside cmux's injected environment. Sourced first by `load.zsh`. |
 | `keybindings/bindkey.zsh` | Custom keybindings. |
 | `tools/` | Tool configs and aliases: bat, zoxide (`cd` → `z`), eza (`ls`), dust (`df`), atuin, fzf, fd, fzf-git, fzf-preview, thefuck. |
 | `development/go.zsh` | Go environment. |

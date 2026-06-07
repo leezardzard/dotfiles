@@ -3,6 +3,9 @@
 # Load all zsh configuration modules
 ZSH_CONFIG_DIR="${0:A:h}"
 
+# PATH first so every module below (and claude-switch) sees ~/.local/bin.
+source "$ZSH_CONFIG_DIR/path.zsh"
+
 # Load keybindings
 source "$ZSH_CONFIG_DIR/keybindings/bindkey.zsh"
 
