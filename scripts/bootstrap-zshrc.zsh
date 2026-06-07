@@ -58,14 +58,14 @@ if [ -d "$GHOSTTY_REPO" ]; then
 fi
 
 ###############################################################################
-# Symlink ~/.claude/statusline-command.sh -> repo's .claude/statusline-command.sh
+# Symlink ~/.claude/statusline-command.sh -> repo's scripts/claude/statusline-command.sh
 # so the Claude Code status line is tracked here. Same idempotent pattern as
 # the p10k/ghostty blocks. Then patch any settings.json that references the
 # script so its statusLine command uses $HOME instead of a hardcoded absolute
 # path — that makes it portable across devices (different usernames).
 # Runtime deps: jq (Brewfile core) and ccusage via npx (Node/fnm).
 ###############################################################################
-STATUSLINE_REPO="$(pwd)/.claude/statusline-command.sh"
+STATUSLINE_REPO="$(pwd)/scripts/claude/statusline-command.sh"
 if [ -f "$STATUSLINE_REPO" ]; then
   mkdir -p ~/.claude
   if [ -L ~/.claude/statusline-command.sh ] && [ "$(readlink ~/.claude/statusline-command.sh)" = "$STATUSLINE_REPO" ]; then
