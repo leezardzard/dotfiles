@@ -1,15 +1,17 @@
 .DS_Store
 
-.config/**
-!.config/nvim/
-!.config/fresh/
-!.config/fresh/init.ts
-!.config/fresh/tsconfig.json
-!.config/fresh/types/
-!.config/fresh/types/**
-!.config/fresh/themes/
-!.config/fresh/themes/**
-!.config/cmux/
-!.config/cmux/cmux.json
-!.config/ghostty/
-!.config/ghostty/config
+# home/ mirrors $HOME and is tracked BY DEFAULT (convention over registry — a new
+# dotfile under home/ is tracked and linked with no edits here). The only thing
+# to exclude is runtime state that apps write THROUGH the symlinks back into the
+# repo: logs, caches, and generated maps. Deny those explicitly; keep the rest.
+
+# Known runtime state (the apps currently linked):
+home/.config/cmux/colors.json     # persisted repo->color map (cm color ...)
+home/.config/fresh/logs/
+home/.config/fresh/plugins/        # downloaded plugin packages
+home/.config/vercel-plugin/        # session/usage stamps
+
+# Defensive: runtime-output paths any future ~/.config app may create.
+home/.config/**/logs/
+home/.config/**/cache/
+home/.config/**/*.log

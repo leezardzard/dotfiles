@@ -4,7 +4,7 @@ Highlights for adopters: **wt** worktree commands, Git delta, fzf-git, shell ali
 
 ## Git worktree: `wt`
 
-The **wt** command is an fzf-based Git worktree switcher (see `scripts/zsh-config/git/worktree.zsh`).
+The **wt** command is an fzf-based Git worktree switcher (see `shell/git/worktree.zsh`).
 
 | Command | Description |
 |---------|-------------|
@@ -20,7 +20,7 @@ Examples: `wt add feature-x`, `wt remote`, `wt go`, `wt rm`.
 
 ## Git: delta pager
 
-[delta](https://github.com/dandavison/delta) is used as the Git pager for readable diffs (side-by-side, syntax highlighting). Config is in `scripts/zsh-config/git/gitconfig` and is copied to `~/.gitconfig` when git-delta is first installed by the bootstrap. Set `user.name` and `user.email` in your local git config; they are not in the repo.
+[delta](https://github.com/dandavison/delta) is used as the Git pager for readable diffs (side-by-side, syntax highlighting). Config is in `shell/git/gitconfig` and is copied to `~/.gitconfig` when git-delta is first installed by the bootstrap. Set `user.name` and `user.email` in your local git config; they are not in the repo.
 
 ## fzf and fzf-git
 
@@ -41,11 +41,11 @@ Examples: `wt add feature-x`, `wt remote`, `wt go`, `wt rm`.
 | **tlrc** | Short, practical command help (tldr-style). |
 | **claude** | Claude Code CLI; native install in `~/.local/bin` (kept on PATH by `tools/claude.zsh`). |
 
-These are wired in `scripts/zsh-config/tools/` and loaded by `load.zsh`.
+These are wired in `shell/tools/` and auto-loaded by `shell/load.zsh`.
 
 ## cmux pane layouts
 
-The `cm cd` subcommand (from `scripts/zsh-config/utilities/cmux.zsh`) opens a new cmux workspace with a predefined split layout. All panes inherit the workspace working directory — no per-surface `cd` is needed.
+The `cm cd` subcommand (from `shell/utilities/cmux.zsh`) opens a new cmux workspace with a predefined split layout. All panes inherit the workspace working directory — no per-surface `cd` is needed.
 
 ```
 cm cd [path] <2|3|4|5|6>
@@ -86,7 +86,7 @@ When invoked from a single-pane cmux workspace (typical "fresh tab" starter), `c
 
 ## Neovim
 
-The repo includes a full Neovim config under `.config/nvim/`:
+The repo includes a full Neovim config under `home/.config/nvim/`:
 
 - **Lazy.nvim** — Plugin manager.
 - **LSP** — nvim-lspconfig, Mason.

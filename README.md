@@ -5,13 +5,13 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
 ## Features
 
 - **macOS bootstrap** — Xcode CLI tools, Homebrew, CLI tools, and casks (iTerm2, VS Code, Docker, etc.)
-- **Zsh** — Oh My Zsh, Powerlevel10k, and modular config in `scripts/zsh-config/`
+- **Zsh** — Oh My Zsh, Powerlevel10k, and auto-sourced modular config in `shell/`
 - **Shell tools** — bat, eza, zoxide, fzf, fd, atuin, dust, thefuck, tlrc
 - **Claude Code** — native CLI install (`~/.local/bin`), kept on PATH automatically
 - **Git** — delta pager and **wt** (fzf-based Git worktree switcher)
 - **Neovim** — Lazy.nvim, LSP, Telescope, nvim-tree, and more
 - **cmux** — pane-layout quick-commands (`cm cd [path] 2..6`), worktree broadcast (`cm wt`), git-aware workspace naming, repo-tracked `cmux.json`
-- **Tmux** — configs in repo root
+- **Tmux** — configs under `home/`
 - **Keyboard** — optional RAMA WORKS KARA / Via keymap in `keyboard/`
 
 ## Prerequisites
@@ -60,19 +60,23 @@ To customize the prompt, run `p10k configure`. To add or remove packages, edit t
 ## Project structure
 
 ```
-scripts/           # Bootstrap and zsh-config (keybindings, tools, dev, git, utilities)
+home/              # Mirrors $HOME; everything here is auto-symlinked into $HOME
+  .p10k.zsh        #   -> ~/.p10k.zsh (Powerlevel10k)
+  .tmux.conf       #   -> ~/.tmux.conf
+  .config/nvim/    #   -> ~/.config/nvim  (Lazy.nvim, plugins, LSP)
+  .config/cmux/    #   -> ~/.config/cmux  (pane-layout commands, actions)
+  .config/ghostty/ #   -> ~/.config/ghostty (Morandi ANSI palette)
+  .claude/statusline-command.sh  # -> ~/.claude/statusline-command.sh
+shell/             # Auto-sourced zsh modules (keybindings, tools, dev, git, utilities)
+scripts/           # Install-time: bootstrap, Brewfiles, and the dotfile linker
 bin/               # Executable helper scripts (e.g. cmux-cd-all)
-template/.zshrc    # Base .zshrc copied to ~/.zshrc; load.zsh is appended
-.p10k.zsh          # Powerlevel10k config; symlinked from ~/.p10k.zsh
-.config/nvim/      # Neovim config (Lazy.nvim, plugins, LSP)
-.config/cmux/      # cmux config (cmux.json with pane-layout commands and actions)
-.config/ghostty/   # Ghostty terminal config (Morandi ANSI palette); symlinked from ~/.config/ghostty
-scripts/claude/statusline-command.sh  # Claude Code status line; symlinked from ~/.claude/statusline-command.sh
 keyboard/          # Optional Via keymap (e.g. RAMA WORKS KARA)
-.tmux.conf         # Tmux config
+template/.zshrc    # Base .zshrc copied to ~/.zshrc; shell/load.zsh is prepended
 ```
 
-See [docs/structure.md](docs/structure.md) for a detailed layout.
+Two conventions keep this tidy as it grows: **`home/` mirrors `$HOME`** (drop a
+file in, it's linked — no list) and **`shell/` is auto-sourced** (drop a module
+in, it loads). See [docs/structure.md](docs/structure.md) for the detailed layout.
 
 ## Docs and license
 
