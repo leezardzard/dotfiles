@@ -22,10 +22,10 @@ Claude Code stores credentials in `~/.claude.json` and config in the directory p
 
 ## Setup
 
-Source `claude-switch.zsh` in your shell config (already wired up via `scripts/zsh-config/load.zsh` in this dotfiles repo):
+Source `claude-switch.zsh` in your shell config (already wired up via `shell/load.zsh` in this dotfiles repo):
 
 ```zsh
-source ~/.dotfiles/scripts/zsh-config/tools/claude-switch/claude-switch.zsh
+source ~/.dotfiles/shell/tools/claude-switch/claude-switch.zsh
 ```
 
 ### Migrate an existing account

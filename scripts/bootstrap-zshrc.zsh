@@ -39,7 +39,7 @@ cat ~/.zshrc | grep -m 1 ZSH_THEME
 #   - ours, hardcoded path    -> rewrite command to the portable form
 #   - a different custom one  -> leave it untouched
 ###############################################################################
-if [ -f "$(pwd)/scripts/claude/statusline-command.sh" ]; then
+if [ -f "$(pwd)/home/.claude/statusline-command.sh" ]; then
   if command -v jq >/dev/null 2>&1; then
     PORTABLE_CMD='bash "$HOME/.claude/statusline-command.sh"'
     # Ensure the default settings.json exists so we can install into it.
@@ -130,7 +130,7 @@ fi
 ###############################################################################
 if ! is_package_installed "git-delta"; then
   brew install git-delta
-  cp ./scripts/zsh-config/git/gitconfig ~/.gitconfig
+  cp ./shell/git/gitconfig ~/.gitconfig
 fi
 
 ###############################################################################
@@ -173,7 +173,7 @@ fi
 # block. p10k aborts instant prompt if any console I/O happens after its block
 # runs, so anything that might print at init (warnings, deprecations, etc.)
 # must run before it. Idempotent: skip if the line is already present.
-SOURCE_LINE="source $(pwd)/scripts/zsh-config/load.zsh"
+SOURCE_LINE="source $(pwd)/shell/load.zsh"
 if ! grep -qF "$SOURCE_LINE" ~/.zshrc; then
   { print -r -- "# Dotfiles modules — must precede Powerlevel10k instant prompt."
     print -r -- "$SOURCE_LINE"

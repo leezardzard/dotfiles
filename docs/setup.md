@@ -75,33 +75,33 @@ To add or remove a package, edit the relevant `scripts/brewfiles/Brewfile.<categ
 
 1. **Powerlevel10k** — Clones into Oh My Zsh custom themes if missing.
 2. **`.zshrc`** — Backs up existing `~/.zshrc` to `~/.zshrc.backup`, copies `template/.zshrc` to `~/.zshrc`, sets `ZSH_THEME` to Powerlevel10k, then sources it.
-3. **Dotfile symlinks** — Runs `scripts/link-dotfiles.zsh apply`, which symlinks every tracked dotfile listed in its `MANIFEST` into `$HOME`: `~/.p10k.zsh`, `~/.tmux.conf`, `~/.tmux.powerline.conf`, `~/.config/ghostty`, `~/.config/cmux`, `~/.config/nvim`, `~/.config/fresh`, and `~/.claude/statusline-command.sh`. The linker is idempotent (re-running is a no-op for already-correct links) and backs up any existing real file or stale link first. So `p10k configure` writes through to the repo, and `cmux reload-config` reloads the linked Ghostty/cmux config in place. Run `scripts/link-dotfiles.zsh status` any time to see which targets are linked, drifted, or absent.
+3. **Dotfile symlinks** — Runs `scripts/link-dotfiles.zsh apply`, which **derives** the link set from the `home/` tree (which mirrors `$HOME`) and symlinks each entry into place: `~/.p10k.zsh`, `~/.tmux.conf`, `~/.tmux.powerline.conf`, `~/.config/ghostty`, `~/.config/cmux`, `~/.config/nvim`, `~/.config/fresh`, and `~/.claude/statusline-command.sh`. There is no hand-maintained list — anything under `home/` is linked automatically (git-ignored runtime state is skipped). The linker is idempotent (re-running is a no-op for already-correct links) and backs up any existing real file or stale link first. So `p10k configure` writes through to the repo, and `cmux reload-config` reloads the linked Ghostty/cmux config in place. Run `scripts/link-dotfiles.zsh status` any time to see which targets are linked, drifted, or absent.
 
    > **`~/.config` must be a real directory.** The linker links per-app *leaves* (`~/.config/nvim`, `~/.config/ghostty`, …). If `~/.config` itself is a whole-dir symlink into a dotfiles checkout, `apply` aborts with migration instructions — a whole-dir link collides with the per-app links (causing "Too many levels of symbolic links") and would drag machine-local `~/.config` entries into the repo. Fix: `rm ~/.config && mkdir -p ~/.config`, then re-run.
 
 4. **statusLine command** — Rewrites the `statusLine.command` in `~/.claude/settings.json` (and every `claude-switch` profile) to a portable `$HOME`-relative path so it works across devices with different usernames.
 5. **Zsh plugins** — Installs and sources zsh-autosuggestions via Homebrew.
 6. **Tools** — Installs bat, zoxide, eza, dust, atuin, fzf, fd; clones `fzf-git.sh` to `~/fzf-git.sh` if missing.
-7. **Git** — If git-delta not installed: installs it and copies `scripts/zsh-config/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
+7. **Git** — If git-delta not installed: installs it and copies `shell/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
 8. **Other** — tlrc, thefuck, fnm, go.
 9. **Claude Code** — Runs the native installer (`curl -fsSL https://claude.ai/install.sh | bash`) when `claude` is missing; the binary lands in `~/.local/bin`, which `tools/claude.zsh` keeps on PATH.
 10. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.
-11. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/scripts/zsh-config/load.zsh`.
+11. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/shell/load.zsh`.
 
-After this, new shells load the modular zsh config (keybindings, tools, dev, git worktree `wt`, utilities). Customize the prompt with `p10k configure` — writes go through the symlink to `<repo>/.p10k.zsh`. The Morandi palette is applied at the terminal level via `.config/ghostty/config` (ANSI 0-15 → Morandi hex), so p10k can use upstream-style semantic codes like `BACKGROUND=2` ("green") and Ghostty paints them as Morandi sage everywhere.
+After this, new shells load the modular zsh config (keybindings, tools, dev, git worktree `wt`, utilities). Customize the prompt with `p10k configure` — writes go through the symlink to `<repo>/home/.p10k.zsh`. The Morandi palette is applied at the terminal level via `home/.config/ghostty/config` (ANSI 0-15 → Morandi hex), so p10k can use upstream-style semantic codes like `BACKGROUND=2` ("green") and Ghostty paints them as Morandi sage everywhere.
 
 ---
 
 ## Managed symlinks
 
-Neovim (`.config/nvim/`), tmux (`.tmux.conf`, `.tmux.powerline.conf`), and cmux (`.config/cmux/`) are **linked automatically** by `scripts/link-dotfiles.zsh` during Step 3 — you don't need to symlink them by hand. The manifest in that script is the single place that declares what gets linked; the linker backs up any existing real file first and is safe to re-run.
+Neovim (`home/.config/nvim/`), tmux (`home/.tmux.conf`, `home/.tmux.powerline.conf`), and cmux (`home/.config/cmux/`) are **linked automatically** by `scripts/link-dotfiles.zsh` during Step 3 — you don't need to symlink them by hand. The link set is derived from the `home/` tree, so there's nothing to declare; the linker backs up any existing real file first and is safe to re-run.
 
 ```shell
 ./scripts/link-dotfiles.zsh status   # see what's linked / drifted / absent
 ./scripts/link-dotfiles.zsh apply    # (re)create the links — idempotent
 ```
 
-To add another tracked dotfile to the set, append a `"<repo-relative-source>|$HOME/<target>"` line to `MANIFEST` in `scripts/link-dotfiles.zsh`.
+To add another tracked dotfile to the set, drop it under `home/` at the path mirroring its `$HOME` location (e.g. `home/.gitconfig` → `~/.gitconfig`, `home/.config/foo/` → `~/.config/foo`) — it's linked automatically, no script edit needed.
 
 For cmux, reload the linked config without restarting the app:
 
@@ -109,11 +109,11 @@ For cmux, reload the linked config without restarting the app:
 cmux reload-config
 ```
 
-> If you're migrating a machine that still has a whole-dir `~/.config -> …/.dotfiles/.config` symlink, replace it with a real directory first (`rm ~/.config && mkdir -p ~/.config`) so the per-app links can be created — `apply` will tell you when this is needed.
+> If you're migrating a machine that still has a whole-dir `~/.config -> …/.dotfiles/home/.config` symlink, replace it with a real directory first (`rm ~/.config && mkdir -p ~/.config`) so the per-app links can be created — `apply` will tell you when this is needed.
 
 ## Optional steps
 
-The `cm cd` shell command (loaded automatically from `scripts/zsh-config/utilities/cmux.zsh`) opens a new workspace with a predefined split layout — for example, `cm cd ~/.dotfiles 4` opens a 2x2 grid with all panes cd'd into `~/.dotfiles`. The workspace is named `<repo>:<branch>` when the target is inside a git repo.
+The `cm cd` shell command (loaded automatically from `shell/utilities/cmux.zsh`) opens a new workspace with a predefined split layout — for example, `cm cd ~/.dotfiles 4` opens a 2x2 grid with all panes cd'd into `~/.dotfiles`. The workspace is named `<repo>:<branch>` when the target is inside a git repo.
 
 ### Keyboard (Via)
 
@@ -126,7 +126,7 @@ The `keyboard/` folder contains a RAMA WORKS KARA keymap (e.g. `rama_works_kara.
 - **`brew: command not found`** — Run step 2 again; ensure Xcode Command Line Tools are installed (`xcode-select --install`) and the script completed the Homebrew install.
 - **Default shell is not zsh** — After `bootstrap-zsh.sh`, the script runs `chsh -s $(which zsh)`. Log out and back in (or restart the terminal); verify with `echo $SHELL`.
 - **Powerlevel10k / fonts look wrong** — In iTerm2, set the profile font to “MesloLGS NF” (or the Nerd Font you installed). Run `p10k configure` to pick a style.
-- **`wt` or other custom commands not found** — Ensure `~/.zshrc` contains the `source .../scripts/zsh-config/load.zsh` line and you’re in zsh; open a new terminal or `source ~/.zshrc`.
+- **`wt` or other custom commands not found** — Ensure `~/.zshrc` contains the `source .../shell/load.zsh` line and you’re in zsh; open a new terminal or `source ~/.zshrc`.
 - **fzf-git.sh clone fails** — The script uses `git@github.com:...`; if you don’t use SSH, clone manually with HTTPS and put it in `~/fzf-git.sh`, or change the clone URL in `scripts/bootstrap-zshrc.zsh`.
 
 For other issues, open an issue with your macOS version and the exact command and error output (see [CONTRIBUTING.md](../CONTRIBUTING.md)).

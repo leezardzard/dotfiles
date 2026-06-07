@@ -6,8 +6,8 @@
 #
 # Every "Too many levels of symbolic links" (ELOOP) failure this repo used to
 # hit came from ONE thing: mixing symlink granularities — a per-app link
-# (~/.config/ghostty -> repo/.config/ghostty) layered on top of a whole-dir
-# link (~/.config -> repo/.config). When ~/.config already *is* the repo dir,
+# (~/.config/ghostty -> repo/home/.config/ghostty) layered on top of a whole-dir
+# link (~/.config -> repo/home/.config). When ~/.config already *is* the repo dir,
 # naively `mv`-ing a leaf aside and `ln -s`-ing it back points a path at
 # itself. Two rules kill the whole class:
 #   1. Never link the whole ~/.config         -> guard_config_symlink
@@ -26,10 +26,19 @@ guard_config_symlink() {
   local target="$HOME/.config"
   target="${target:A}"            # fully resolved absolute path
 
+  # Two ways the link aims into a dotfiles repo and must be undone:
+  #   1. the resolved target lives inside THIS repo (home/.config and friends), or
+  #   2. some ancestor of the resolved target is a git checkout (a foreign repo).
   # .git is a directory in a normal clone, a file in a linked worktree — `-e`
-  # catches both. If the parent of the resolved target is a git checkout, the
-  # link aims into a dotfiles repo and must be undone.
-  if [[ -e "${target:h}/.git" ]]; then
+  # catches both. Walk ancestors so the depth of home/ doesn't matter.
+  local in_repo=0 d="${target:h}"
+  [[ "$target" == "${REPO_ROOT:-/dev/null}"/* ]] && in_repo=1
+  while (( ! in_repo )) && [[ -n "$d" && "$d" != "/" && "$d" != "$HOME" ]]; do
+    [[ -e "$d/.git" ]] && { in_repo=1; break; }
+    d="${d:h}"
+  done
+
+  if (( in_repo )); then
     print -u2 "error: ~/.config is a whole-dir symlink into a dotfiles repo:"
     print -u2 "         ~/.config -> $target"
     print -u2 ""
