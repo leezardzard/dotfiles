@@ -46,8 +46,14 @@ fi
 GHOSTTY_REPO="$(pwd)/.config/ghostty"
 if [ -d "$GHOSTTY_REPO" ]; then
   mkdir -p ~/.config
-  if [ -L ~/.config/ghostty ] && [ "$(readlink ~/.config/ghostty)" = "$GHOSTTY_REPO" ]; then
-    echo "~/.config/ghostty already linked to $GHOSTTY_REPO"
+  # Same-inode guard: if ~/.config/ghostty already resolves to $GHOSTTY_REPO it
+  # needs no linking. This covers BOTH a direct ghostty symlink AND the case
+  # where ~/.config itself is a symlink into the repo (~/.config -> .dotfiles/
+  # .config) — there ~/.config/ghostty *is* $GHOSTTY_REPO, so the old code would
+  # mv the repo's own source dir aside and `ln -s` the path to itself, producing
+  # a self-referential loop ("Too many levels of symbolic links"). Skip instead.
+  if [ ~/.config/ghostty -ef "$GHOSTTY_REPO" ]; then
+    echo "~/.config/ghostty already resolves to $GHOSTTY_REPO"
   else
     if [ -e ~/.config/ghostty ] || [ -L ~/.config/ghostty ]; then
       mv ~/.config/ghostty ~/.config/ghostty.backup-$(date +%Y%m%d-%H%M%S)
