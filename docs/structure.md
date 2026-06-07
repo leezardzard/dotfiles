@@ -22,8 +22,10 @@ Directory layout and what each part does.
 |------|-------------|
 | `bootstrap` | System bootstrap: Xcode CLI, Homebrew, CLI packages, casks, Docker, Kubernetes-related tools, mas apps. |
 | `bootstrap-zsh.sh` | Installs zsh, sets default shell, installs Oh My Zsh. |
-| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, fnm, go; symlinks `~/.p10k.zsh`, `~/.config/ghostty`, and `~/.claude/statusline-command.sh`; appends `source .../load.zsh` to `~/.zshrc`. |
-| `claude/statusline-command.sh` | Claude Code status line (four-line "bullet" style; weekly usage via `ccusage`). `~/.claude/statusline-command.sh` is symlinked to this by `bootstrap-zshrc.zsh`, which also rewrites the `statusLine.command` in `~/.claude/settings.json` (and every `claude-switch` profile) to a portable `$HOME`-relative path. Runtime deps: `jq`, `ccusage` (via `npx`). |
+| `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools (bat, zoxide, eza, dust, atuin, fzf, fd, fzf-git.sh), git-delta + gitconfig, tlrc, thefuck, fnm, go; runs `link-dotfiles.zsh apply` to symlink tracked dotfiles, patches the `statusLine.command` in each `settings.json`, and appends `source .../load.zsh` to `~/.zshrc`. |
+| `link-dotfiles.zsh` | Wires every tracked dotfile into `$HOME` via idempotent, loop-safe symlinks. `apply` (default) links; `status` reports each target without changing anything. The `MANIFEST` array is the single source of truth for *what* gets linked (p10k, tmux, ghostty, cmux, nvim, fresh, claude statusline). Aborts if `~/.config` is a whole-dir symlink into the repo (the historical ELOOP cause). |
+| `lib/link.zsh` | Linking primitives sourced by `link-dotfiles.zsh`: `link` (idempotent symlink with backup + same-inode `-ef` no-op guard), `link_status` (report one target), `guard_config_symlink` (refuse to run when `~/.config` is a whole-dir link into a dotfiles checkout). |
+| `claude/statusline-command.sh` | Claude Code status line (four-line "bullet" style; weekly usage via `ccusage`). `~/.claude/statusline-command.sh` is symlinked to this via the `link-dotfiles.zsh` manifest; `bootstrap-zshrc.zsh` then rewrites the `statusLine.command` in `~/.claude/settings.json` (and every `claude-switch` profile) to a portable `$HOME`-relative path. Runtime deps: `jq`, `ccusage` (via `npx`). |
 | `utils/homebrew_util.zsh` | Helper `is_package_installed` for Homebrew; used by bootstrap. |
 | `zsh-config/` | Modular Zsh config; entry point is `load.zsh`. |
 
