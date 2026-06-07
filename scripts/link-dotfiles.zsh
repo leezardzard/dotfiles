@@ -26,6 +26,7 @@ MANIFEST=(
   ".config/ghostty|$HOME/.config/ghostty"
   ".config/cmux|$HOME/.config/cmux"
   ".config/nvim|$HOME/.config/nvim"
+  ".config/fresh|$HOME/.config/fresh"
   "scripts/claude/statusline-command.sh|$HOME/.claude/statusline-command.sh"
 )
 
