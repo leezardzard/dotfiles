@@ -39,6 +39,7 @@ Examples: `wt add feature-x`, `wt remote`, `wt go`, `wt rm`.
 | **fd** | Fast find; used as a backend for fzf. |
 | **thefuck** | Corrects previous command. |
 | **tlrc** | Short, practical command help (tldr-style). |
+| **claude** | Claude Code CLI; native install in `~/.local/bin` (kept on PATH by `tools/claude.zsh`). |
 
 These are wired in `scripts/zsh-config/tools/` and loaded by `load.zsh`.
 

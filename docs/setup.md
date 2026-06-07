@@ -81,8 +81,9 @@ To add or remove a package, edit the relevant `scripts/brewfiles/Brewfile.<categ
 6. **Tools** — Installs bat, zoxide, eza, dust, atuin, fzf, fd; clones `fzf-git.sh` to `~/fzf-git.sh` if missing.
 7. **Git** — If git-delta not installed: installs it and copies `scripts/zsh-config/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
 8. **Other** — tlrc, thefuck, fnm, go.
-9. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.
-10. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/scripts/zsh-config/load.zsh`.
+9. **Claude Code** — Runs the native installer (`curl -fsSL https://claude.ai/install.sh | bash`) when `claude` is missing; the binary lands in `~/.local/bin`, which `tools/claude.zsh` keeps on PATH.
+10. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.
+11. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/scripts/zsh-config/load.zsh`.
 
 After this, new shells load the modular zsh config (keybindings, tools, dev, git worktree `wt`, utilities). Customize the prompt with `p10k configure` — writes go through the symlink to `<repo>/.p10k.zsh`. The Morandi palette is applied at the terminal level via `.config/ghostty/config` (ANSI 0-15 → Morandi hex), so p10k can use upstream-style semantic codes like `BACKGROUND=2` ("green") and Ghostty paints them as Morandi sage everywhere.
 

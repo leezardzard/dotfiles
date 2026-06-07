@@ -7,6 +7,7 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
 - **macOS bootstrap** — Xcode CLI tools, Homebrew, CLI tools, and casks (iTerm2, VS Code, Docker, etc.)
 - **Zsh** — Oh My Zsh, Powerlevel10k, and modular config in `scripts/zsh-config/`
 - **Shell tools** — bat, eza, zoxide, fzf, fd, atuin, dust, thefuck, tlrc
+- **Claude Code** — native CLI install (`~/.local/bin`), kept on PATH automatically
 - **Git** — delta pager and **wt** (fzf-based Git worktree switcher)
 - **Neovim** — Lazy.nvim, LSP, Telescope, nvim-tree, and more
 - **cmux** — pane-layout quick-commands (`cm cd [path] 2..6`), worktree broadcast (`cm wt`), git-aware workspace naming, repo-tracked `cmux.json`

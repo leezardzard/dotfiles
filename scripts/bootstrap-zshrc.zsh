@@ -46,8 +46,14 @@ fi
 GHOSTTY_REPO="$(pwd)/.config/ghostty"
 if [ -d "$GHOSTTY_REPO" ]; then
   mkdir -p ~/.config
-  if [ -L ~/.config/ghostty ] && [ "$(readlink ~/.config/ghostty)" = "$GHOSTTY_REPO" ]; then
-    echo "~/.config/ghostty already linked to $GHOSTTY_REPO"
+  # Same-inode guard: if ~/.config/ghostty already resolves to $GHOSTTY_REPO it
+  # needs no linking. This covers BOTH a direct ghostty symlink AND the case
+  # where ~/.config itself is a symlink into the repo (~/.config -> .dotfiles/
+  # .config) — there ~/.config/ghostty *is* $GHOSTTY_REPO, so the old code would
+  # mv the repo's own source dir aside and `ln -s` the path to itself, producing
+  # a self-referential loop ("Too many levels of symbolic links"). Skip instead.
+  if [ ~/.config/ghostty -ef "$GHOSTTY_REPO" ]; then
+    echo "~/.config/ghostty already resolves to $GHOSTTY_REPO"
   else
     if [ -e ~/.config/ghostty ] || [ -L ~/.config/ghostty ]; then
       mv ~/.config/ghostty ~/.config/ghostty.backup-$(date +%Y%m%d-%H%M%S)
@@ -198,6 +204,16 @@ brew install fnm
 # Install go
 ###############################################################################
 brew install go
+
+###############################################################################
+# Install Claude Code (native installer)
+# https://claude.ai/install.sh — installs the `claude` binary to ~/.local/bin.
+# claude.zsh (sourced via load.zsh) puts ~/.local/bin on PATH. Idempotent: skip
+# when claude is already installed/on PATH.
+###############################################################################
+if [ ! -x "$HOME/.local/bin/claude" ] && ! command -v claude >/dev/null 2>&1; then
+  curl -fsSL https://claude.ai/install.sh | bash
+fi
 
 ###############################################################################
 # Load all zsh configurations
