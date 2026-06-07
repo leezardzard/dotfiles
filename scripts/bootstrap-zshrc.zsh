@@ -78,27 +78,32 @@ if [ -f "$STATUSLINE_REPO" ]; then
     echo "Linked ~/.claude/statusline-command.sh -> $STATUSLINE_REPO"
   fi
 
-  # Rewrite any settings.json (default config + every claude-switch profile)
-  # whose statusLine command points at statusline-command.sh, swapping the
-  # hardcoded absolute path for a portable "$HOME"-relative one. Idempotent.
+  # Point every settings.json (default config + each claude-switch profile) at
+  # the portable "$HOME"-relative statusLine command. Three cases, idempotent:
+  #   - no statusLine set       -> install {type: command, command: ...}
+  #   - ours, hardcoded path    -> rewrite command to the portable form
+  #   - a different custom one  -> leave it untouched
   if command -v jq >/dev/null 2>&1; then
     PORTABLE_CMD='bash "$HOME/.claude/statusline-command.sh"'
+    # Ensure the default settings.json exists so we can install into it.
+    [ -f ~/.claude/settings.json ] || echo '{}' >~/.claude/settings.json
     for settings in ~/.claude/settings.json ~/.claude-profiles/*/.claude/settings.json(N); do
       [ -f "$settings" ] || continue
       cur=$(jq -r '.statusLine.command // ""' "$settings" 2>/dev/null) || continue
+      filter="" action=""
       case "$cur" in
-        *statusline-command.sh*)
-          if [ "$cur" != "$PORTABLE_CMD" ]; then
-            tmp="$settings.tmp.$$"
-            if jq --arg c "$PORTABLE_CMD" '.statusLine.command = $c' "$settings" >"$tmp" 2>/dev/null; then
-              mv "$tmp" "$settings"
-              echo "Patched statusLine command in $settings"
-            else
-              rm -f "$tmp"
-            fi
-          fi
-          ;;
+        "")                      filter='.statusLine = {type: "command", command: $c}'; action="Installed" ;;
+        *statusline-command.sh*) [ "$cur" = "$PORTABLE_CMD" ] && continue
+                                 filter='.statusLine.command = $c';                     action="Patched"   ;;
+        *)                       continue ;;  # different custom status line — leave it
       esac
+      tmp="$settings.tmp.$$"
+      if jq --arg c "$PORTABLE_CMD" "$filter" "$settings" >"$tmp" 2>/dev/null; then
+        mv "$tmp" "$settings"
+        echo "$action statusLine command in $settings"
+      else
+        rm -f "$tmp"
+      fi
     done
   fi
 fi
