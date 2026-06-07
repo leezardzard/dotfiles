@@ -94,4 +94,4 @@ The repo includes a full Neovim config under `.config/nvim/`:
 - **nvim-tree** — File tree.
 - **Bufferline**, **lualine**, **treesitter**, **nvim-cmp**, **which-key**, and more.
 
-Symlink `~/.dotfiles/.config/nvim` to `~/.config/nvim` to use it (see [setup.md](setup.md)). No bootstrap script installs Neovim; install it yourself (e.g. `brew install neovim`) and then use this config.
+`~/.config/nvim` is symlinked to this config automatically by `scripts/link-dotfiles.zsh` during bootstrap (see [setup.md](setup.md)). No bootstrap script installs Neovim itself; install it yourself (e.g. `brew install neovim`) and then use this config.

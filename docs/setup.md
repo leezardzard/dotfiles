@@ -75,8 +75,11 @@ To add or remove a package, edit the relevant `scripts/brewfiles/Brewfile.<categ
 
 1. **Powerlevel10k** — Clones into Oh My Zsh custom themes if missing.
 2. **`.zshrc`** — Backs up existing `~/.zshrc` to `~/.zshrc.backup`, copies `template/.zshrc` to `~/.zshrc`, sets `ZSH_THEME` to Powerlevel10k, then sources it.
-3. **`.p10k.zsh`** — Symlinks `~/.p10k.zsh` to the repo's `.p10k.zsh` (backing up any existing file) so the p10k config is tracked and `p10k configure` writes through to the repo.
-4. **`.config/ghostty/`** — Symlinks `~/.config/ghostty` to the repo's `.config/ghostty` so Ghostty terminal settings (including the Morandi ANSI 0-15 palette override) are tracked here. Backs up any existing directory first. `cmux reload-config` reloads it in place.
+3. **Dotfile symlinks** — Runs `scripts/link-dotfiles.zsh apply`, which symlinks every tracked dotfile listed in its `MANIFEST` into `$HOME`: `~/.p10k.zsh`, `~/.tmux.conf`, `~/.tmux.powerline.conf`, `~/.config/ghostty`, `~/.config/cmux`, `~/.config/nvim`, and `~/.claude/statusline-command.sh`. The linker is idempotent (re-running is a no-op for already-correct links) and backs up any existing real file or stale link first. So `p10k configure` writes through to the repo, and `cmux reload-config` reloads the linked Ghostty/cmux config in place. Run `scripts/link-dotfiles.zsh status` any time to see which targets are linked, drifted, or absent.
+
+   > **`~/.config` must be a real directory.** The linker links per-app *leaves* (`~/.config/nvim`, `~/.config/ghostty`, …). If `~/.config` itself is a whole-dir symlink into a dotfiles checkout, `apply` aborts with migration instructions — a whole-dir link collides with the per-app links (causing "Too many levels of symbolic links") and would drag machine-local `~/.config` entries into the repo. Fix: `rm ~/.config && mkdir -p ~/.config`, then re-run.
+
+4. **statusLine command** — Rewrites the `statusLine.command` in `~/.claude/settings.json` (and every `claude-switch` profile) to a portable `$HOME`-relative path so it works across devices with different usernames.
 5. **Zsh plugins** — Installs and sources zsh-autosuggestions via Homebrew.
 6. **Tools** — Installs bat, zoxide, eza, dust, atuin, fzf, fd; clones `fzf-git.sh` to `~/fzf-git.sh` if missing.
 7. **Git** — If git-delta not installed: installs it and copies `scripts/zsh-config/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
@@ -89,49 +92,26 @@ After this, new shells load the modular zsh config (keybindings, tools, dev, git
 
 ---
 
-## Optional steps
+## Managed symlinks
 
-### Neovim
-
-The repo includes `.config/nvim/` (Lazy.nvim, LSP, Telescope, etc.). To use it:
-
-- **Option 1:** Symlink the directory:
-  ```shell
-  mkdir -p ~/.config
-  ln -sfn ~/.dotfiles/.config/nvim ~/.config/nvim
-  ```
-- **Option 2:** Set `XDG_CONFIG_HOME` or copy the folder; the above symlink is the usual approach.
-
-### Tmux
-
-Configs are in the repo root: `.tmux.conf` and `.tmux.powerline.conf`. Symlink or copy into `$HOME` if you use tmux:
+Neovim (`.config/nvim/`), tmux (`.tmux.conf`, `.tmux.powerline.conf`), and cmux (`.config/cmux/`) are **linked automatically** by `scripts/link-dotfiles.zsh` during Step 3 — you don't need to symlink them by hand. The manifest in that script is the single place that declares what gets linked; the linker backs up any existing real file first and is safe to re-run.
 
 ```shell
-ln -sfn ~/.dotfiles/.tmux.conf ~/.tmux.conf
+./scripts/link-dotfiles.zsh status   # see what's linked / drifted / absent
+./scripts/link-dotfiles.zsh apply    # (re)create the links — idempotent
 ```
 
-### cmux
+To add another tracked dotfile to the set, append a `"<repo-relative-source>|$HOME/<target>"` line to `MANIFEST` in `scripts/link-dotfiles.zsh`.
 
-cmux is a Ghostty-based terminal multiplexer installed by `./scripts/bootstrap install terminal`. The repo tracks its config under `.config/cmux/`. To use it:
-
-If `~/.config/cmux/` already exists as a real file or directory, back it up first:
-
-```shell
-mv ~/.config/cmux ~/.config/cmux.backup
-```
-
-Then symlink the repo config:
-
-```shell
-mkdir -p ~/.config
-ln -sfn ~/.dotfiles/.config/cmux ~/.config/cmux
-```
-
-To reload the config without restarting the app:
+For cmux, reload the linked config without restarting the app:
 
 ```shell
 cmux reload-config
 ```
+
+> If you're migrating a machine that still has a whole-dir `~/.config -> …/.dotfiles/.config` symlink, replace it with a real directory first (`rm ~/.config && mkdir -p ~/.config`) so the per-app links can be created — `apply` will tell you when this is needed.
+
+## Optional steps
 
 The `cm cd` shell command (loaded automatically from `scripts/zsh-config/utilities/cmux.zsh`) opens a new workspace with a predefined split layout — for example, `cm cd ~/.dotfiles 4` opens a 2x2 grid with all panes cd'd into `~/.dotfiles`. The workspace is named `<repo>:<branch>` when the target is inside a git repo.
 
