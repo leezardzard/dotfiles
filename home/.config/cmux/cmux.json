@@ -395,10 +395,10 @@
 
       // Directional pane focus on cmd+shift+arrows. Overrides the defaults
       // (cmd+opt+arrows) which conflict with Rectangle/macOS in this setup.
-      "focusLeft":  "cmd+shift+left",
-      "focusRight": "cmd+shift+right",
-      "focusUp":    "cmd+shift+up",
-      "focusDown":  "cmd+shift+down"
+      "focusLeft":  "cmd+shift+←",
+      "focusRight": "cmd+shift+→",
+      "focusUp":    "cmd+shift+↑",
+      "focusDown":  "cmd+shift+↓"
     }
   },
 
