@@ -182,4 +182,24 @@ if ! grep -qF "$SOURCE_LINE" ~/.zshrc; then
   } > ~/.zshrc.tmp && mv ~/.zshrc.tmp ~/.zshrc
 fi
 
+###############################################################################
+# Wire atuin AFTER oh-my-zsh. atuin is intentionally skipped by load.zsh's glob
+# (see shell/load.zsh) because OMZ's `bindkey -e` would wipe atuin's ^R /
+# up-arrow widgets off the emacs keymap if atuin loaded first. So source it just
+# below `source $ZSH/oh-my-zsh.sh`. Idempotent: skip if the line is already
+# present.
+###############################################################################
+ATUIN_LINE="source $(pwd)/shell/tools/atuin.zsh"
+if ! grep -qF "$ATUIN_LINE" ~/.zshrc; then
+  awk -v line="$ATUIN_LINE" '
+    { print }
+    /^source \$ZSH\/oh-my-zsh\.sh/ && !done {
+      print ""
+      print "# Dotfiles: atuin must load after oh-my-zsh (see shell/load.zsh)."
+      print line
+      done = 1
+    }
+  ' ~/.zshrc > ~/.zshrc.tmp && mv ~/.zshrc.tmp ~/.zshrc
+fi
+
 echo "✅ All configurations have been modularized and loaded!"
