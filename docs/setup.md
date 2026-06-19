@@ -29,7 +29,7 @@ The bootstrap script is a thin orchestrator over per-category Brewfiles in `scri
 
 ```shell
 ./scripts/bootstrap                              # install everything
-./scripts/bootstrap install core node docker     # install only these categories
+./scripts/bootstrap install core node podman     # install only these categories
 ./scripts/bootstrap list                         # show available categories
 ./scripts/bootstrap doctor                       # report missing packages per category
 ./scripts/bootstrap update                       # explicit: brew update && brew upgrade
@@ -44,7 +44,7 @@ The first run will also (when missing) prompt for **Xcode Command Line Tools** a
 | `core` | ffmpeg, git, httpie, imagemagick, mas, rename, tree, webkit2png, btop, fresh-editor |
 | `node` | fnm, then `fnm install --lts && fnm default lts-latest` |
 | `cloud` | awscli, kubernetes-cli, kind, eksctl (Weaveworks tap) |
-| `docker` | docker cask, docker-compose, and CLI plugin symlink under `~/.docker/cli-plugins/` |
+| `podman` | podman engine, podman-compose, Podman Desktop cask, and `podman machine` init (post-hook) |
 | `terminal` | iTerm2, cmux, Hack Nerd Font, Meslo LG Nerd Font |
 | `apps-daily` | Raycast, Rectangle, Caffeine, Chrome, Firefox, Slack, Notion, Spotify, GitHub |
 | `apps-dev` | VS Code, Postman, ngrok, Robo 3T, Altair GraphQL Client, Figma, Nucleo, ImageOptim, Transmit, Tor Browser |
@@ -53,6 +53,16 @@ The first run will also (when missing) prompt for **Xcode Command Line Tools** a
 To add or remove a package, edit the relevant `scripts/brewfiles/Brewfile.<category>`. To add a whole new category, drop a new `Brewfile.<name>` in that directory and append the name to `CATEGORIES` in `scripts/bootstrap`.
 
 > **Note on `brew update` / `brew upgrade`** — they're no longer in the default install path (they made every re-run slow). Run `./scripts/bootstrap update` explicitly when you want to refresh and upgrade.
+
+### Supabase on Podman
+
+The Supabase CLI is hardcoded to talk to `/var/run/docker.sock`. Since this setup uses Podman instead of Docker Desktop, run the helper once after installing the `podman` category to symlink the live Podman socket there:
+
+```shell
+./scripts/setup-supabase
+```
+
+It removes any stale `~/.docker/run/docker.sock` link, ensures a **rootless** Podman machine is running, resolves the active socket via `podman machine inspect`, and runs `sudo ln -sf <podman-socket> /var/run/docker.sock` (you'll be prompted for your password). After that, `supabase start` routes straight into the Podman engine.
 
 ---
 

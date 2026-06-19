@@ -1,3 +1,0 @@
-# docker — cask + compose (post-hook symlinks compose into ~/.docker/cli-plugins)
-brew "docker-compose"
-cask "docker-desktop"
