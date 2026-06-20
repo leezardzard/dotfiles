@@ -4,7 +4,7 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
 
 ## Features
 
-- **macOS bootstrap** — Xcode CLI tools, Homebrew, CLI tools, and casks (iTerm2, VS Code, Docker, etc.)
+- **macOS bootstrap** — Xcode CLI tools, Homebrew, CLI tools, and casks (iTerm2, VS Code, Podman, etc.)
 - **Zsh** — Oh My Zsh, Powerlevel10k, and auto-sourced modular config in `shell/`
 - **Shell tools** — bat, eza, zoxide, fzf, fd, atuin, dust, thefuck, tlrc
 - **Claude Code** — native CLI install (`~/.local/bin`), kept on PATH automatically
@@ -34,11 +34,17 @@ macOS dev setup with Zsh, Neovim, and Git worktrees.
 
    ```shell
    ./scripts/bootstrap                              # everything
-   ./scripts/bootstrap install core node docker     # or a subset
+   ./scripts/bootstrap install core node podman     # or a subset
    ./scripts/bootstrap list                         # see categories
    ```
 
    Package lists live in `scripts/brewfiles/Brewfile.<category>`.
+
+   To run the Supabase CLI against Podman, bridge the Docker socket once:
+
+   ```shell
+   ./scripts/setup-supabase
+   ```
 
 3. **Install Zsh and shell-related packages:**
 

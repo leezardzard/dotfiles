@@ -75,7 +75,8 @@ To add a tool: drop `shell/tools/<name>.zsh` — it auto-loads. Pin it in
 | `bootstrap-zshrc.zsh` | Powerlevel10k, `.zshrc` setup, shell tools, git-delta + gitconfig, fnm, go, Claude Code; runs `link-dotfiles.zsh apply`, patches each `settings.json` statusLine command, and prepends `source .../shell/load.zsh` to `~/.zshrc`. |
 | `link-dotfiles.zsh` | Derives the link set from `home/` and wires it into `$HOME` via idempotent, loop-safe symlinks. `apply` (default) links; `status` reports. No manifest to maintain. |
 | `lib/link.zsh` | Linking primitives: `link` (idempotent symlink + backup + same-inode no-op guard), `link_status`, `guard_config_symlink` (refuse to run when `~/.config` is a whole-dir link into a checkout). |
-| `brewfiles/` | `Brewfile.<category>` package lists (core, node, cloud, docker, terminal, apps-daily, apps-dev, mas). |
+| `brewfiles/` | `Brewfile.<category>` package lists (core, node, cloud, podman, terminal, apps-daily, apps-dev, mas). |
+| `setup-supabase` | Bridges `/var/run/docker.sock` to the rootless Podman socket so the Supabase CLI works. Run once after the `podman` category. |
 | `utils/homebrew_util.zsh` | `is_package_installed` helper used by bootstrap. |
 
 For a quick feature overview (wt, delta, aliases), see [features.md](features.md).

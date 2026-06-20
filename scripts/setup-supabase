@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+#
+# setup-supabase — bridge the Docker socket to Podman so the Supabase CLI
+# (which is hardcoded to look at /var/run/docker.sock) talks to the rootless
+# Podman machine. Run once after `./scripts/bootstrap install podman`.
+#
+# What it does:
+#   1. removes any stale user-level ~/.docker/run/docker.sock link
+#   2. ensures a rootless Podman machine is running
+#   3. symlinks the live Podman socket to /var/run/docker.sock (needs sudo)
+#
+# Re-runnable: safe to run again if the Podman socket path changes.
+
+set -euo pipefail
+
+DOCKER_SOCK="/var/run/docker.sock"
+
+require_podman() {
+  if ! command -v podman >/dev/null 2>&1; then
+    echo "error: podman not found. Run ./scripts/bootstrap install podman first." >&2
+    exit 1
+  fi
+}
+
+ensure_machine_running() {
+  echo "==> podman: ensuring a rootless machine is running"
+  if ! podman machine inspect >/dev/null 2>&1; then
+    podman machine init
+  fi
+  # Supabase needs the socket accessible without elevated container perms.
+  podman machine set --rootful=false >/dev/null 2>&1 || true
+  if ! podman machine inspect --format '{{.State}}' 2>/dev/null | grep -q running; then
+    podman machine start
+  fi
+}
+
+bridge_socket() {
+  echo "==> cleaning stale user-level docker.sock link"
+  rm -f "$HOME/.docker/run/docker.sock"
+
+  local podman_socket
+  podman_socket="$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+  if [ -z "$podman_socket" ]; then
+    echo "error: could not resolve the Podman socket path." >&2
+    exit 1
+  fi
+  echo "==> podman socket: $podman_socket"
+
+  echo "==> linking $podman_socket -> $DOCKER_SOCK (sudo required)"
+  sudo ln -sf "$podman_socket" "$DOCKER_SOCK"
+}
+
+main() {
+  require_podman
+  ensure_machine_running
+  bridge_socket
+
+  echo
+  echo "Done. The Supabase CLI will now route through Podman."
+  echo "Next: export DOCKER_HOST if anything still probes TCP, then run:"
+  echo "    supabase start"
+}
+
+main "$@"

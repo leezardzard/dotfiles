@@ -1,0 +1,6 @@
+# podman — daemonless container engine (Docker replacement) + desktop UI.
+# Post-hook initializes the podman machine; run `./scripts/setup-supabase`
+# to bridge /var/run/docker.sock so the Supabase CLI talks to Podman.
+brew "podman"
+brew "podman-compose"
+cask "podman-desktop"

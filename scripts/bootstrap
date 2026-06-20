@@ -13,14 +13,14 @@ BREWFILE_DIR="$SCRIPT_DIR/brewfiles"
 # Category order = install order. Matters because:
 #   - `mas` formula (from core) must exist before Brewfile.mas runs
 #   - `fnm` must install before its post-hook installs LTS Node
-CATEGORIES="core node cloud docker terminal apps-daily apps-dev mas"
+CATEGORIES="core node cloud podman terminal apps-daily apps-dev mas"
 
 category_desc() {
   case "$1" in
     core)       echo "CLI essentials (git, mas, fresh-editor, btop, ...)" ;;
     node)       echo "fnm + default LTS Node (via post-hook)" ;;
     cloud)      echo "awscli, kubectl, kind, eksctl" ;;
-    docker)     echo "docker cask + compose (symlinks CLI plugin)" ;;
+    podman)     echo "podman engine + compose + desktop (inits machine)" ;;
     terminal)   echo "iTerm2, cmux, Nerd fonts" ;;
     apps-daily) echo "raycast, chrome, slack, notion, ..." ;;
     apps-dev)   echo "vscode, postman, figma, ..." ;;
@@ -41,7 +41,7 @@ Commands:
 
 Examples:
   ./scripts/bootstrap                              # install everything
-  ./scripts/bootstrap install core node docker     # install a subset
+  ./scripts/bootstrap install core node podman     # install a subset
   ./scripts/bootstrap doctor terminal              # check one category
 
 Categories: $CATEGORIES
@@ -75,17 +75,21 @@ _post_node() {
   fnm default lts-latest
 }
 
-_post_docker() {
-  echo "==> docker: symlinking compose CLI plugin"
-  mkdir -p "$HOME/.docker/cli-plugins"
-  ln -sfn /opt/homebrew/opt/docker-compose/bin/docker-compose \
-    "$HOME/.docker/cli-plugins/docker-compose"
+_post_podman() {
+  echo "==> podman: initializing machine"
+  if ! podman machine inspect >/dev/null 2>&1; then
+    podman machine init
+  fi
+  # Rootless keeps the Docker-socket bridge working without elevated perms.
+  podman machine set --rootful=false >/dev/null 2>&1 || true
+  podman machine start 2>/dev/null || true
+  echo "    podman machine ready. For Supabase, run: ./scripts/setup-supabase"
 }
 
 run_post_hook() {
   case "$1" in
     node)   _post_node ;;
-    docker) _post_docker ;;
+    podman) _post_podman ;;
   esac
 }
 
