@@ -22,16 +22,22 @@ _CS_PROFILES_DIR="$HOME/.claude-profiles"
 
 _CS_DEFAULT_FILE="$_CS_PROFILES_DIR/.default"
 
+# _cs_profile_json: Print the live config file for a profile. This is the file
+# Claude Code actually reads/writes when CLAUDE_CONFIG_DIR points at the profile,
+# and the target ~/.claude.json symlinks to (single source of truth).
+_cs_profile_json() {
+  echo "$_CS_PROFILES_DIR/$1/.claude/.claude.json"
+}
+
 # _cs_active_profile: Print the name of the currently active profile (or empty string).
 # Detection: check ~/.claude.json symlink target, then fall back to CLAUDE_CONFIG_DIR.
 _cs_active_profile() {
-  # 1. Check symlink
+  # 1. Check symlink → .../<profile>/.claude/.claude.json
   if [[ -L "$HOME/.claude.json" ]]; then
     local target
     target=$(readlink "$HOME/.claude.json" 2>/dev/null)
-    if [[ "$target" == */.claude-profiles/*/. ]]; then
-      # Extract profile name from path like /Users/x/.claude-profiles/personal/.claude.json
-      local name="${target%/.claude.json}"
+    if [[ "$target" == */.claude-profiles/*/.claude/.claude.json ]]; then
+      local name="${target%/.claude/.claude.json}"
       name="${name##*/}"
       echo "$name"
       return 0
@@ -59,7 +65,7 @@ _cs_apply_profile() {
     return 1
   fi
   export CLAUDE_CONFIG_DIR="$_CS_PROFILES_DIR/$name/.claude"
-  ln -sf "$_CS_PROFILES_DIR/$name/.claude.json" "$HOME/.claude.json"
+  ln -sf "$(_cs_profile_json "$name")" "$HOME/.claude.json"
 }
 
 # _cs_autoload_default: Apply the default profile on shell startup if none is active.
@@ -108,7 +114,7 @@ claude_switch_go() {
     local header="ENTER to switch, ESC to cancel."
     [[ -n "$active" ]] && header="Current: $active. $header"
 
-    local preview_cmd="echo '📁 Profile: {1}'; echo '---'; /usr/bin/stat -f 'Last modified: %Sm' $_CS_PROFILES_DIR/{1}/.claude.json 2>/dev/null || echo 'No .claude.json yet'; echo '---'; echo 'Config contents:'; ls $_CS_PROFILES_DIR/{1}/.claude/ 2>/dev/null || echo 'Empty config dir'"
+    local preview_cmd="echo '📁 Profile: {1}'; echo '---'; /usr/bin/stat -f 'Last modified: %Sm' $_CS_PROFILES_DIR/{1}/.claude/.claude.json 2>/dev/null || echo 'No .claude.json yet'; echo '---'; echo 'Config contents:'; ls $_CS_PROFILES_DIR/{1}/.claude/ 2>/dev/null || echo 'Empty config dir'"
 
     local selected
     selected=$(_cs_list_profiles | _cs_fzf \
@@ -130,12 +136,12 @@ claude_switch_go() {
 
   # Safety: warn if ~/.claude.json is a regular file on first switch
   if [[ -f "$HOME/.claude.json" && ! -L "$HOME/.claude.json" ]]; then
-    local profile_json="$_CS_PROFILES_DIR/$name/.claude.json"
+    local profile_json="$(_cs_profile_json "$name")"
     if [[ ! -s "$profile_json" ]]; then
       echo "⚠️  ~/.claude.json is not yet managed by cs."
       echo "   Your current config will be overwritten by a symlink."
       echo "   Consider seeding this profile first:"
-      echo "     cp ~/.claude.json $_CS_PROFILES_DIR/$name/.claude.json"
+      echo "     cp ~/.claude.json $profile_json"
       echo "     cp -r ~/.claude/* $_CS_PROFILES_DIR/$name/.claude/"
       printf "   Continue anyway? (y/n): "
       local confirm
@@ -145,7 +151,7 @@ claude_switch_go() {
   fi
 
   export CLAUDE_CONFIG_DIR="$_CS_PROFILES_DIR/$name/.claude"
-  ln -sf "$_CS_PROFILES_DIR/$name/.claude.json" "$HOME/.claude.json"
+  ln -sf "$(_cs_profile_json "$name")" "$HOME/.claude.json"
   echo "✅ Switched to Claude profile: $name"
 }
 
@@ -157,7 +163,7 @@ claude_switch_list() {
   fi
 
   if [[ -n "$_CS_FZF" && -x "$_CS_FZF" ]]; then
-    local preview_cmd="echo '📁 Profile: {1}'; echo '---'; /usr/bin/stat -f 'Last modified: %Sm' $_CS_PROFILES_DIR/{1}/.claude.json 2>/dev/null || echo 'No .claude.json yet'; echo '---'; echo 'Config contents:'; ls $_CS_PROFILES_DIR/{1}/.claude/ 2>/dev/null || echo 'Empty config dir'"
+    local preview_cmd="echo '📁 Profile: {1}'; echo '---'; /usr/bin/stat -f 'Last modified: %Sm' $_CS_PROFILES_DIR/{1}/.claude/.claude.json 2>/dev/null || echo 'No .claude.json yet'; echo '---'; echo 'Config contents:'; ls $_CS_PROFILES_DIR/{1}/.claude/ 2>/dev/null || echo 'Empty config dir'"
 
     _cs_list_profiles | _cs_fzf \
       --prompt="Claude Profiles> " \
@@ -184,7 +190,7 @@ claude_switch_add() {
   fi
 
   mkdir -p "$_CS_PROFILES_DIR/$name/.claude"
-  touch "$_CS_PROFILES_DIR/$name/.claude.json"
+  touch "$(_cs_profile_json "$name")"
   echo "✅ Created profile: $name"
   echo "   Path: $_CS_PROFILES_DIR/$name"
 
@@ -243,7 +249,7 @@ claude_switch_mv() {
     # Update symlink/env if the renamed profile was active
     if [[ "$active" == "$src" ]]; then
       export CLAUDE_CONFIG_DIR="$_CS_PROFILES_DIR/$dest/.claude"
-      ln -sf "$_CS_PROFILES_DIR/$dest/.claude.json" "$HOME/.claude.json"
+      ln -sf "$(_cs_profile_json "$dest")" "$HOME/.claude.json"
       echo "   Active profile updated to '$dest'."
     fi
   fi
@@ -403,14 +409,15 @@ Any unrecognized subcommand is treated as a profile name:
 
 Directory layout (~/.claude-profiles/):
   <profile>/
-    .claude/         Config directory (CLAUDE_CONFIG_DIR)
-    .claude.json     Auth/credentials (symlinked to ~/.claude.json)
+    .claude/               Config directory (CLAUDE_CONFIG_DIR)
+      .claude.json         Live config — the file Claude Code reads/writes,
+                           and the target ~/.claude.json symlinks to.
     .desktop-data-dir  --user-data-dir for cs desktop (optional; absent = primary account)
 
 Setup:
   cs add personal
   cp -r ~/.claude/* ~/.claude-profiles/personal/.claude/
-  cp ~/.claude.json ~/.claude-profiles/personal/.claude.json
+  # ~/.claude/.claude.json (or ~/.claude.json on older installs) is the live config
   cs add work
   cs personal       # switch to personal profile
 
