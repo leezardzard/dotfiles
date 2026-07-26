@@ -6,12 +6,15 @@
 #
 # Line 1 (location):  [worktree ·] dir … · [app … ·] branch … · <state words>
 # Line 2 (model/ctx):  model … · style … · context ▰▰▱▱▱ NN% used [· exceeds 200k]
-# Line 3 (session):    session · elapsed … · api … · cost … · rate … · lines … · resets …
-# Line 4 (week/model): this week · Opus 4.8 $143 · … · total $228 · resets …
+# Line 3 (session):    session · elapsed … · api … · cost … · lines … · time ▰▰▱▱▱ 2h/5h (15:00) · spend ▰▱▱▱▱ $9/$50
+# Line 4 (week/model): this week · Opus 4.8 $143 · … · time ▰▰▰▱▱ 4d/7d (Mon Jul 27) · spend ▰▰▰▱▱ $213/$300
 #
-# Weekly per-model totals + reset windows come from `ccusage` (local usage logs),
+# Weekly per-model totals + block/window data come from `ccusage` (local usage logs),
 # cached at ~/.claude/.statusline-weekly.json, refreshed in the background every 10m.
-# "resets" on L3 = active 5h block end; on L4 = weekly bucket (period + 7d).
+# The "time" bars show elapsed/total through the reset window (L3 = active 5h block,
+# L4 = weekly period + 7d); the "spend" bars show cost against a budget, overridable via:
+#   STATUSLINE_BLOCK_BUDGET (default 50)   STATUSLINE_WEEK_BUDGET (default 300)   — USD.
+# A stale lock (>10m old) is auto-reclaimed, so a died refresh can't freeze the cache.
 # Debug: `STATUSLINE_DEBUG=1 claude` appends raw payloads to /tmp/claude-statusline.jsonl
 set -u
 
@@ -29,6 +32,10 @@ dur_ms=$(jq -r '.cost.total_duration_ms // empty'        <<<"$input")
 api_ms=$(jq -r '.cost.total_api_duration_ms // empty'    <<<"$input")
 out_style=$(jq -r '.output_style.name // empty'          <<<"$input")
 exceeds=$(jq -r '.exceeds_200k_tokens // empty'          <<<"$input")
+
+# --- spend-bar budgets (USD; override via env) ---
+BLOCK_BUDGET=${STATUSLINE_BLOCK_BUDGET:-50}
+WEEK_BUDGET=${STATUSLINE_WEEK_BUDGET:-300}
 
 # --- ANSI plumbing ---
 ESC=$'\033'
@@ -52,44 +59,71 @@ fmt_dur() {
   elif [ "$s" -lt 3600 ]; then printf '%dm' $(( s / 60 ))
   else printf '%dh%dm' $(( s / 3600 )) $(( (s % 3600) / 60 )); fi
 }
-# remaining seconds → compact "2h30m" / "4d2h" / "12m"
-fmt_left() {
-  local s=$1; [ "$s" -lt 0 ] && s=0
-  local m=$(( s / 60 ))
-  if   [ "$m" -lt 60 ];   then printf '%dm' "$m"
-  elif [ "$m" -lt 1440 ]; then printf '%dh%dm' $(( m / 60 )) $(( m % 60 ))
-  else printf '%dd%dh' $(( m / 1440 )) $(( (m % 1440) / 60 )); fi
-}
 # ISO-8601 UTC → epoch (BSD date; silent fail → empty)
 iso_epoch() { local t=$1; t=${t%Z}; t=${t%.*}; date -u -j -f "%Y-%m-%dT%H:%M:%S" "$t" +%s 2>/dev/null; }
+# portable timeout: `_timeout <secs> <outfile> cmd…` — runs cmd with stdout to outfile,
+# killing it if it overruns. BSD has no timeout(1); bash 3.2 makes `set -m` unreliable in
+# $(). Writing to a FILE (not a command-substitution pipe) means a lingering child can
+# never block the caller — we read the file after wait/kill no matter what the subtree does.
+_timeout() {
+  local t=$1 of=$2; shift 2
+  "$@" >"$of" 2>/dev/null & local p=$!
+  ( sleep "$t"; kill -9 "$p" 2>/dev/null ) >/dev/null 2>&1 & local k=$!
+  wait "$p" 2>/dev/null
+  kill "$k" 2>/dev/null
+}
+# integer percent (rounded, may exceed 100) → 5-cell bar, green/amber/rose by fill
+usage_bar() {
+  local pct=$1; [ "$pct" -lt 0 ] && pct=0
+  local f=$(( (pct + 10) / 20 )); [ "$f" -gt 5 ] && f=5; [ "$f" -lt 0 ] && f=0
+  local b="" i; for ((i=0; i<5; i++)); do [ "$i" -lt "$f" ] && b+="▰" || b+="▱"; done
+  local fg=10; [ "$pct" -ge 50 ] && fg=11; [ "$pct" -ge 80 ] && fg=9
+  printf '%s' "${ESC}[38;5;${fg}m${b}${RESET}"
+}
+pct_of() { awk -v n="$1" -v d="$2" 'BEGIN{ if(d>0) printf "%d", (n/d*100)+0.5; else print 0 }'; }
+# seconds → compact window spans: "45m" / "2h" / "2h30m" (hours) ; "5h" / "3d" / "3d5h" (days)
+fmt_hm() { local s=$1; [ "$s" -lt 0 ] && s=0; local m=$(( s/60 ));
+  if [ "$m" -lt 60 ]; then printf '%dm' "$m"; else local h=$((m/60)) r=$((m%60));
+  [ "$r" -eq 0 ] && printf '%dh' "$h" || printf '%dh%dm' "$h" "$r"; fi; }
+fmt_dh() { local s=$1; [ "$s" -lt 0 ] && s=0; local h=$(( s/3600 ));
+  if [ "$h" -lt 24 ]; then printf '%dh' "$h"; else local d=$((h/24)) r=$((h%24));
+  [ "$r" -eq 0 ] && printf '%dd' "$d" || printf '%dd%dh' "$d" "$r"; fi; }
 
 # ============================ weekly usage cache ==========================
 CACHE="$HOME/.claude/.statusline-weekly.json"
 LOCK="$HOME/.claude/.statusline-weekly.lock"
 if [ -z "$(find "$CACHE" -mmin -10 2>/dev/null)" ]; then
+  # Reclaim a stale lock: a refresh that died (SIGKILL / reboot / hung ccusage) can't
+  # run its EXIT trap, so the lock dir lingers and freezes the cache forever. Any lock
+  # older than the refresh window means the owner is gone — drop it before acquiring.
+  [ -d "$LOCK" ] && [ -z "$(find "$LOCK" -mmin -10 2>/dev/null)" ] && rmdir "$LOCK" 2>/dev/null
   if mkdir "$LOCK" 2>/dev/null; then
     (
-      trap 'rmdir "$LOCK" 2>/dev/null' EXIT
+      trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
       tmp="$CACHE.tmp.$$"
-      wk=$(npx ccusage weekly --json --breakdown 2>/dev/null)
-      bl=$(npx ccusage blocks --active --json 2>/dev/null)
+      _timeout 30 "$tmp.wk" npx ccusage weekly --json --breakdown; wk=$(cat "$tmp.wk" 2>/dev/null)
+      _timeout 30 "$tmp.bl" npx ccusage blocks --active --json;    bl=$(cat "$tmp.bl" 2>/dev/null)
       [ -z "$bl" ] && bl='{"blocks":[]}'
       if [ -n "$wk" ]; then
         jq -nc --argjson w "$wk" --argjson b "$bl" '
           ($w.weekly[-1]) as $wk |
           { models: [$wk.modelBreakdowns[] | {m:.modelName, c:.cost}],
             total: $wk.totalCost,
-            week_start: $wk.period,
-            block_end: ($b.blocks[0].endTime // null) }' \
+            week_start:  $wk.period,
+            block_start: ($b.blocks[0].startTime // null),
+            block_end:   ($b.blocks[0].endTime   // null),
+            block_cost:  ($b.blocks[0].costUSD   // null) }' \
           >"$tmp" 2>/dev/null && mv "$tmp" "$CACHE"
       fi
-      rm -f "$tmp" 2>/dev/null
+      rm -f "$tmp" "$tmp.wk" "$tmp.bl" 2>/dev/null
     ) >/dev/null 2>&1 &
   fi
 fi
-block_end=""; week_start=""
+block_start=""; block_end=""; block_cost=""; week_start=""
 if [ -f "$CACHE" ]; then
+  block_start=$(jq -r '.block_start // empty' "$CACHE" 2>/dev/null)
   block_end=$(jq -r '.block_end // empty' "$CACHE" 2>/dev/null)
+  block_cost=$(jq -r '.block_cost // empty' "$CACHE" 2>/dev/null)
   week_start=$(jq -r '.week_start // empty' "$CACHE" 2>/dev/null)
 fi
 shorten_model() {
@@ -177,15 +211,19 @@ lines_val=""
 [ -n "${added:-}" ]   && [ "${added:-0}"   != "0" ] && lines_val+="$(col 10 "+${added}")"
 [ -n "${removed:-}" ] && [ "${removed:-0}" != "0" ] && { [ -n "$lines_val" ] && lines_val+=" "; lines_val+="$(col 9 "-${removed}")"; }
 [ -n "$lines_val" ] && raw 3 "${ESC}[38;5;8mlines ${RESET}${lines_val}"
-# session block reset (5h window) — replaces the wall clock
-if [ -n "$block_end" ] && [ "$block_end" != "null" ]; then
-  ee=$(iso_epoch "$block_end")
-  if [ -n "$ee" ]; then
-    rem=$(( ee - $(date +%s) ))
-    at=$(date -r "$ee" +%H:%M 2>/dev/null)
-    rfg=7; [ "$rem" -lt 1800 ] && rfg=9   # rose when <30m left
-    kv 3 resets "$rfg" "$(fmt_left "$rem") (${at})"
+# session 5h block: time-through-window bar (elapsed/total + reset clock) + spend bar
+if [ -n "$block_start" ] && [ "$block_start" != "null" ] \
+   && [ -n "$block_end" ] && [ "$block_end" != "null" ]; then
+  bs=$(iso_epoch "$block_start"); be=$(iso_epoch "$block_end")
+  if [ -n "$bs" ] && [ -n "$be" ] && [ "$be" -gt "$bs" ]; then
+    total=$(( be - bs )); el=$(( $(date +%s) - bs ))
+    [ "$el" -lt 0 ] && el=0; [ "$el" -gt "$total" ] && el="$total"
+    at=$(date -r "$be" +%H:%M 2>/dev/null)
+    raw 3 "${ESC}[38;5;8mtime ${RESET}$(usage_bar "$(( el * 100 / total ))") $(col 7 "$(fmt_hm "$el")/$(fmt_hm "$total")") $(dim "(${at})")"
   fi
+fi
+if [ -n "$block_cost" ] && [ "$block_cost" != "null" ]; then
+  raw 3 "${ESC}[38;5;8mspend ${RESET}$(usage_bar "$(pct_of "$block_cost" "$BLOCK_BUDGET")") $(col 7 "$(fmt_cost "$block_cost")/$(fmt_cost "$BLOCK_BUDGET")")"
 fi
 
 # ============================ LINE 4: this week per model ================
@@ -195,20 +233,23 @@ if [ -f "$CACHE" ]; then
     [ -z "$m" ] && continue
     raw 4 "$(col "$(model_color "$m")" "$(shorten_model "$m")") $(col 7 "$(fmt_cost "$c")")"
   done < <(jq -r '.models[:5][] | "\(.m)\t\(.c)"' "$CACHE" 2>/dev/null)
-  wtotal=$(jq -r '.total // empty' "$CACHE" 2>/dev/null)
-  [ -n "$wtotal" ] && raw 4 "${ESC}[38;5;8mtotal ${RESET}$(col 15 "$(fmt_cost "$wtotal")")"
 else
   raw 4 "$(dim 'loading…')"
 fi
-# weekly bucket reset (period + 7 days)
+# weekly 7-day window: time-through-window bar (elapsed/total + reset date)
 if [ -n "$week_start" ] && [ "$week_start" != "null" ]; then
   ws=$(date -j -f "%Y-%m-%d %H:%M:%S" "$week_start 00:00:00" +%s 2>/dev/null)
   if [ -n "$ws" ]; then
-    reset=$(( ws + 7 * 86400 ))
-    rem=$(( reset - $(date +%s) ))
+    total=$(( 7 * 86400 )); reset=$(( ws + total )); el=$(( $(date +%s) - ws ))
+    [ "$el" -lt 0 ] && el=0; [ "$el" -gt "$total" ] && el="$total"
     on=$(date -r "$reset" "+%a %b %d" 2>/dev/null)
-    kv 4 resets 7 "$(fmt_left "$rem") (${on})"
+    raw 4 "${ESC}[38;5;8mtime ${RESET}$(usage_bar "$(( el * 100 / total ))") $(col 7 "$(fmt_dh "$el")/$(fmt_dh "$total")") $(dim "(${on})")"
   fi
+fi
+# weekly spend bar (total vs budget) — folds in the old standalone "total" segment
+if [ -f "$CACHE" ]; then
+  wtotal=$(jq -r '.total // empty' "$CACHE" 2>/dev/null)
+  [ -n "$wtotal" ] && raw 4 "${ESC}[38;5;8mspend ${RESET}$(usage_bar "$(pct_of "$wtotal" "$WEEK_BUDGET")") $(col 7 "$(fmt_cost "$wtotal")/$(fmt_cost "$WEEK_BUDGET")")"
 fi
 
 # ============================ emit (skip empty lines) =====================
