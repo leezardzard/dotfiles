@@ -735,6 +735,13 @@ type CursorInfo = {
 		start: number;
 		end: number;
 	} | null;
+	/**
+	* 0-indexed line number of the cursor. `None` when the line index is
+	* unavailable — e.g. a huge file whose line scan hasn't completed, where
+	* the editor positions purely by byte offset. Plugins must treat `null`
+	* as "unknown", never as line 0.
+	*/
+	line: number | null;
 };
 type OverlayOptions = {
 	/**
@@ -1695,7 +1702,13 @@ interface EditorAPI {
 	*/
 	listSplits(): SplitSnapshot[];
 	/**
-	* Get the line number (0-indexed) of the primary cursor
+	* Get the line number (0-indexed) of the primary cursor.
+	* 
+	* @deprecated Use `getPrimaryCursor()?.line` instead. This accessor cannot
+	* represent "line index unavailable" (huge files before their line scan) —
+	* it returns `0` in that case, indistinguishable from a real first line.
+	* `getPrimaryCursor().line` is `number | null` and also covers every cursor
+	* via `getAllCursors()`.
 	*/
 	getCursorLine(): number;
 	/**
@@ -1864,38 +1877,17 @@ interface EditorAPI {
 	*/
 	getAuthorityLabel(): string;
 	/**
-	* Current Workspace Trust level for the active project:
-	* `"restricted"`, `"trusted"`, or `"blocked"` (empty `""` when trust
-	* state is unavailable, e.g. the default local authority).
-	*
-	* Trust is a per-project, user-granted decision. Plugins that run
-	* repo-controlled work (env activation, project tooling, repo-local
-	* binaries) MUST gate on this and treat anything other than
-	* `"trusted"` as "do not execute".
+	* Current Workspace Trust level for the active project: `"restricted"`,
+	* `"trusted"`, or `"blocked"` (empty when unavailable). Exposed to JS as
+	* `editor.workspaceTrustLevel()`. Plugins that run repo-controlled work
+	* should treat anything other than `"trusted"` as "do not execute".
 	*/
-	workspaceTrustLevel(): "restricted" | "trusted" | "blocked" | "";
+	workspaceTrustLevel(): string;
 	/**
-	* Activate an environment by setting the live env recipe: an activation
-	* shell `snippet` (e.g. `eval "$(direnv export bash)"`,
-	* `source .venv/bin/activate`, or `""` for a pure login shell) run in
-	* `dir` (defaults to the workspace). It is re-evaluated on demand on the
-	* active backend and applied to every spawn — language servers,
-	* formatters, `spawnProcess` — so they see the project environment. No
-	* authority rebuild; the LSP is restarted to pick it up.
-	*
-	* Honored only when `workspaceTrustLevel() === "trusted"` (it runs
-	* repo-controlled code). Call `clearEnv()` to deactivate.
-	*/
-	setEnv(snippet: string, dir?: string): void;
-	/**
-	* Deactivate the environment set by `setEnv` — spawns return to the
-	* inherited environment.
-	*/
-	clearEnv(): void;
-	/**
-	* Whether an environment is currently active (a recipe was set via
-	* `setEnv`). Survives the restart `setEnv` triggers, so a plugin can
-	* re-establish its file watch and reflect activation after reloading.
+	* Whether an environment is currently active (set via `editor.setEnv`).
+	* Exposed to JS as `editor.envActive()`. Lets the env-manager plugin
+	* reflect activation and re-establish its file watch after the restart
+	* that `setEnv` triggers.
 	*/
 	envActive(): boolean;
 	/**
@@ -2133,6 +2125,21 @@ interface EditorAPI {
 	* review-diff comments keyed off git state.
 	*/
 	getDataDir(): string;
+	/**
+	* Per-working-directory data root for plugin state that should be scoped
+	* to the current project root / worktree rather than shared across all of
+	* them (`<data_dir>/workdirs/<encoded-cwd>/`). Prefer this over
+	* `getDataDir()` for per-project state; the directory is not created for
+	* you. Note: terminal scrollback and orchestrator state use their own
+	* dedicated layouts (see `getTerminalDir()`), not this root.
+	*/
+	getWorkingDataDir(): string;
+	/**
+	* Directory holding terminal scrollback backing files for the current
+	* working directory. Each project root / worktree has its own subdir, so
+	* a search can stay scoped to the active project's terminals.
+	*/
+	getTerminalDir(): string;
 	/**
 	* Get themes directory path
 	*/
@@ -2471,6 +2478,29 @@ interface EditorAPI {
 	* non-overlay prompts.
 	*/
 	setPromptFooter(footer: StyledText[]): boolean;
+	/**
+	* Set the floating-overlay prompt's header toolbar as a `WidgetSpec`
+	* (real, clickable `Toggle`/`Button` widgets), rendered in place of the
+	* styled-text title. Give each control a `key` equal to the action it
+	* should fire on click (e.g. `"live_grep_toggle_files"`). Pass `null` to
+	* clear it. No visible effect on non-overlay prompts.
+	*/
+	setPromptToolbar(spec: WidgetSpec | null): boolean;
+	/**
+	* Set the floating-overlay prompt's input-row status text, shown
+	* right-aligned just left of the `selected / total` count (e.g.
+	* "Searching…", "No matches"). Empty string clears it. No effect on
+	* non-overlay prompts.
+	*/
+	setPromptStatus(status: string): boolean;
+	/**
+	* Toggle a floating-overlay toolbar control by its widget `key`. The host
+	* owns the toggle's checked state, flips it in place, and emits a
+	* `widget_event` (`event_type: "toggle"`, payload `{ checked }`). Use this
+	* to route a plugin's own keyboard shortcut through the same host path as
+	* a click or Space on the toggle, then react in your `widget_event` handler.
+	*/
+	toggleOverlayToolbarWidget(key: string): boolean;
 	/**
 	* Override the currently-highlighted suggestion row in the
 	* open prompt. The editor clamps `index` to the suggestion
@@ -2859,6 +2889,16 @@ interface EditorAPI {
 	* `setAuthority`.
 	*/
 	clearAuthority(): void;
+	/**
+	* Activate an environment: set the live env recipe (`snippet` run in
+	* `dir`). Applied to every spawn, re-evaluated on demand — no restart.
+	* Honored only when the workspace is Trusted.
+	*/
+	setEnv(snippet: string, dir: string | null): void;
+	/**
+	* Deactivate the environment — spawns return to the inherited env.
+	*/
+	clearEnv(): void;
 	/**
 	* Override the Remote Indicator's displayed state. Plugins call
 	* this to surface lifecycle transitions that the authority layer
