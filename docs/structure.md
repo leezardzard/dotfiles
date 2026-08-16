@@ -41,7 +41,6 @@ skipped — so the link set always equals the tracked set.
 | `home/.config/ghostty/` | `~/.config/ghostty` | Ghostty terminal config — Morandi ANSI 0-15 palette override; affects every CLI tool emitting ANSI 0-15. `cmux reload-config` reloads in place. |
 | `home/.config/cmux/` | `~/.config/cmux` | cmux config (`cmux.json` pane layouts + Morandi workspace colors). `colors.json` is the git-ignored persisted repo→color map. |
 | `home/.config/nvim/` | `~/.config/nvim` | Neovim config (Lazy.nvim, core, plugins, LSP). |
-| `home/.config/fresh/` | `~/.config/fresh` | fresh editor config (`logs/`, `plugins/` are git-ignored runtime state). |
 | `home/.claude/statusline-command.sh` | `~/.claude/statusline-command.sh` | Claude Code status line (four-line "bullet" style; weekly usage via `ccusage`). `bootstrap-zshrc.zsh` rewrites `statusLine.command` in each `settings.json` to a portable `$HOME`-relative path. Runtime deps: `jq`, `ccusage`. |
 
 > **`.config` / `.claude` are linked per-leaf, never whole-dir.** `~/.config` and

@@ -17,7 +17,7 @@ CATEGORIES="core node cloud podman terminal apps-daily apps-dev mas"
 
 category_desc() {
   case "$1" in
-    core)       echo "CLI essentials (git, mas, fresh-editor, btop, ...)" ;;
+    core)       echo "CLI essentials (git, mas, btop, ...)" ;;
     node)       echo "fnm + default LTS Node (via post-hook)" ;;
     cloud)      echo "awscli, kubectl, kind, eksctl" ;;
     podman)     echo "podman engine + compose + desktop (inits machine)" ;;
