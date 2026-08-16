@@ -14,9 +14,6 @@
 # or the trailing text becomes part of the pattern and the rule matches nothing.
 # persisted repo->color map (cm color ...)
 home/.config/cmux/colors.json
-home/.config/fresh/logs/
-# downloaded plugin packages
-home/.config/fresh/plugins/
 # session/usage stamps
 home/.config/vercel-plugin/
 

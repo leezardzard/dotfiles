@@ -5,8 +5,8 @@
 # in-place — no app restart needed.
 #
 # Two sections below:
-#   1. Window appearance — transparency + background blur.
-#   2. Morandi ANSI 0-15 palette override.
+#   1. Window appearance — canvas colors + transparency + background blur.
+#   2. Orca-parity ANSI 0-15 palette override.
 #
 # Codes 16-255 in the 256-color cube are NOT remapped here.
 
@@ -14,39 +14,54 @@
 # Window appearance
 ###############################################################################
 
-# 0.0 (fully transparent) — 1.0 (fully opaque). 0.8 lets noticeably more of
-# the desktop / window behind show through, paired with the blur below.
-background-opacity = 0.8
+# Canvas colors are pinned rather than inherited. Ghostty's built-in default
+# happens to be these values today (it is the same theme Orca ships as its
+# default, "Ghostty Default Style Dark"), but inheriting means an upstream
+# Ghostty release could silently move the background out from under the
+# palette below — and under the cmux sidebar tint keyed to it.
+background = #282c34
+foreground = #ffffff
+cursor-color = #ffffff
+cursor-text = #282c34
+selection-background = #5a7898
+selection-foreground = #ffffff
+
+# 0.0 (fully transparent) — 1.0 (fully opaque). Orca's default is opaque; 0.95
+# keeps a hint of glass without letting the desktop wash out `background` and
+# break the contrast step between the pane and the cmux sidebar.
+background-opacity = 0.95
 
 # 0 = no blur, higher = stronger frosted-glass effect on the area behind the
 # window. Only takes effect when background-opacity < 1.0 and the OS supports
-# it (macOS does). 20 is a soft, readable blur.
-background-blur-radius = 20
+# it (macOS does). Raised alongside the higher opacity so the remaining
+# transparency still reads as frosted rather than as a dirty window.
+background-blur-radius = 30
 
 ###############################################################################
-# Morandi ANSI 0-15 palette
+# Orca-parity ANSI 0-15 palette
 #
-# Low-saturation, dusty tones. Every CLI tool emitting ANSI 0-15 picks these
+# The Tomorrow Night-derived set from Orca's default terminal theme, keyed to
+# the #282c34 background above. Every CLI tool emitting ANSI 0-15 picks these
 # up: p10k cards, `git status`, `eza --color`, `bat`, `htop`, completion menus.
 # Format: `palette = N=#hex` for slot N (0-15).
 ###############################################################################
 
 # Normal (ANSI 0-7)
-palette = 0=#3A3A38
-palette = 1=#A88577
-palette = 2=#8AA088
-palette = 3=#B8A572
-palette = 4=#8398B0
-palette = 5=#8B7A93
-palette = 6=#7A9999
-palette = 7=#D4CABA
+palette = 0=#1d1f21
+palette = 1=#cc6666
+palette = 2=#b5bd68
+palette = 3=#f0c674
+palette = 4=#81a2be
+palette = 5=#b294bb
+palette = 6=#8abeb7
+palette = 7=#c5c8c6
 
 # Bright (ANSI 8-15)
-palette = 8=#6D6B68
-palette = 9=#C4A1A5
-palette = 10=#A4B89F
-palette = 11=#D2C2A3
-palette = 12=#A0B3C8
-palette = 13=#A89AAF
-palette = 14=#9CB3B3
-palette = 15=#E5DDD0
+palette = 8=#666666
+palette = 9=#d54e53
+palette = 10=#b9ca4a
+palette = 11=#e7c547
+palette = 12=#7aa6da
+palette = 13=#c397d8
+palette = 14=#70c0b1
+palette = 15=#eaeaea

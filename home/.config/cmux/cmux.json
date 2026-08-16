@@ -145,38 +145,43 @@
   //     "openTerminalLinksInCmuxBrowser" : true
   //   },
 
-  // Morandi-palette overrides for the 16 workspace colors used by `cm cd`
-  // on the leftRail card, plus focus (selectionColor) and notification badge.
+  // Orca-parity overrides for the 16 workspace colors used by `cm cd` on the
+  // leftRail card, plus focus (selectionColor) and notification badge. Drawn
+  // from the same Tomorrow Night set as the Ghostty ANSI palette so a rail dot
+  // and the ANSI color of the same name are the same hue. `selectionColor`
+  // mirrors Ghostty's `selection-background`, so pane focus and text selection
+  // read as one accent.
   "workspaceColors": {
     "indicatorStyle": "leftRail",
-    "selectionColor": "#BFB5A3",
-    "notificationBadgeColor": "#A88577",
+    "selectionColor": "#5a7898",
+    "notificationBadgeColor": "#cc6666",
     "colors": {
-      "Red":      "#A88577",
-      "Crimson":  "#8B5F5F",
-      "Orange":   "#B5946F",
-      "Amber":    "#B8A572",
-      "Olive":    "#8E9072",
-      "Green":    "#8AA088",
-      "Teal":     "#7A9999",
-      "Aqua":     "#95B0AE",
-      "Blue":     "#8398B0",
-      "Navy":     "#5C6E92",
-      "Indigo":   "#76769E",
-      "Purple":   "#8B7A93",
-      "Magenta":  "#A07A8B",
-      "Rose":     "#C4A1A5",
-      "Brown":    "#9C826E",
-      "Charcoal": "#6D6B68"
+      "Red":      "#cc6666",
+      "Crimson":  "#d54e53",
+      "Orange":   "#de935f",
+      "Amber":    "#f0c674",
+      "Olive":    "#b9ca4a",
+      "Green":    "#b5bd68",
+      "Teal":     "#8abeb7",
+      "Aqua":     "#70c0b1",
+      "Blue":     "#81a2be",
+      "Navy":     "#4f6b8a",
+      "Indigo":   "#7aa6da",
+      "Purple":   "#b294bb",
+      "Magenta":  "#c397d8",
+      "Rose":     "#d7a0a8",
+      "Brown":    "#a3785f",
+      "Charcoal": "#666666"
     }
   },
 
-  // Sidebar chrome — warm-dark Morandi tint to coordinate with the terminal
-  // background. `tintColor` is mixed with the system material at
-  // `tintOpacity`. Higher opacity = more visible tint.
+  // Sidebar chrome — Orca's own default: a near-neutral tint at low opacity, so
+  // the chrome sits quietly against the #282c34 terminal canvas instead of
+  // competing with it. `tintColor` is mixed with the system material at
+  // `tintOpacity`. Higher opacity = more visible tint (cmux caps it at 0.35).
   "sidebarAppearance": {
-    "tintColor": "#3A3A38",
-    "tintOpacity": 0.35,
+    "tintColor": "#18181b",
+    "tintOpacity": 0.08,
     "matchTerminalBackground": false,
     "darkModeTintColor": null,
     "lightModeTintColor": null
