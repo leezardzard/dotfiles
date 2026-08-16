@@ -175,12 +175,13 @@
     }
   },
 
-  // Sidebar chrome — Orca's own default: a near-neutral tint at low opacity, so
-  // the chrome sits quietly against the #282c34 terminal canvas instead of
-  // competing with it. `tintColor` is mixed with the system material at
-  // `tintOpacity`. Higher opacity = more visible tint (cmux caps it at 0.35).
+  // Sidebar chrome — the same neutral the Ghostty canvas is pinned to, at low
+  // opacity, so the sidebar and the terminal read as one surface the way
+  // Orca's nav and file tree do. `tintColor` is mixed with the system material
+  // at `tintOpacity`, so the result lands near but not exactly on the raw hex.
+  // Higher opacity = more visible tint (cmux caps it at 0.35).
   "sidebarAppearance": {
-    "tintColor": "#18181b",
+    "tintColor": "#171717",
     "tintOpacity": 0.08,
     "matchTerminalBackground": false,
     "darkModeTintColor": null,

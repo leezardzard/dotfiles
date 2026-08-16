@@ -14,15 +14,19 @@
 # Window appearance
 ###############################################################################
 
-# Canvas colors are pinned rather than inherited. Ghostty's built-in default
-# happens to be these values today (it is the same theme Orca ships as its
-# default, "Ghostty Default Style Dark"), but inheriting means an upstream
-# Ghostty release could silently move the background out from under the
-# palette below — and under the cmux sidebar tint keyed to it.
-background = #282c34
+# Canvas colors are pinned rather than inherited, so an upstream Ghostty
+# release cannot move the background out from under the palette below — or
+# from under the cmux sidebar tint keyed to it.
+#
+# The background is Orca's *app chrome* neutral (its `--sidebar` / `--card`
+# token), not the #282c34 of Orca's default terminal theme. Orca paints its
+# nav and file tree in this neutral and only the terminal pane in #282c34, so
+# matching the terminal theme left a blue-tinted rectangle floating inside
+# neutral chrome. Matching the chrome is what actually reads as one surface.
+background = #171717
 foreground = #ffffff
 cursor-color = #ffffff
-cursor-text = #282c34
+cursor-text = #171717
 selection-background = #5a7898
 selection-foreground = #ffffff
 
@@ -40,9 +44,14 @@ background-blur-radius = 30
 ###############################################################################
 # Orca-parity ANSI 0-15 palette
 #
-# The Tomorrow Night-derived set from Orca's default terminal theme, keyed to
-# the #282c34 background above. Every CLI tool emitting ANSI 0-15 picks these
-# up: p10k cards, `git status`, `eza --color`, `bat`, `htop`, completion menus.
+# The Tomorrow Night-derived set from Orca's default terminal theme, carried
+# over unchanged against the darker background above. Every CLI tool emitting
+# ANSI 0-15 picks these up: p10k cards, `git status`, `eza --color`, `bat`,
+# `htop`, completion menus.
+#
+# Slot 0 (#1d1f21) is now slightly *lighter* than the canvas rather than
+# darker. Kept as-is so a "black" cell stays identical to Orca's own — the
+# cost is that black-on-black fills read as a faint raised block.
 # Format: `palette = N=#hex` for slot N (0-15).
 ###############################################################################
 

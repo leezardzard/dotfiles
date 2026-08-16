@@ -76,6 +76,7 @@ home/              # Mirrors $HOME; everything here is auto-symlinked into $HOME
 shell/             # Auto-sourced zsh modules (keybindings, tools, dev, git, utilities)
 scripts/           # Install-time: bootstrap, Brewfiles, and the dotfile linker
 bin/               # Executable helper scripts (e.g. cmux-cd-all)
+themes/            # Hand-imported themes (Orca terminal YAML); NOT symlinked
 keyboard/          # Optional Via keymap (e.g. RAMA WORKS KARA)
 template/.zshrc    # Base .zshrc copied to ~/.zshrc; shell/load.zsh is prepended
 ```
