@@ -98,7 +98,7 @@ It removes any stale `~/.docker/run/docker.sock` link, ensures a **rootless** Po
 10. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.
 11. **Dotfiles load** — Appends a line to `~/.zshrc`: `source <repo>/shell/load.zsh`.
 
-After this, new shells load the modular zsh config (keybindings, tools, dev, git worktree `wt`, utilities). Customize the prompt with `p10k configure` — writes go through the symlink to `<repo>/home/.p10k.zsh`. The Morandi palette is applied at the terminal level via `home/.config/ghostty/config` (ANSI 0-15 → Morandi hex), so p10k can use upstream-style semantic codes like `BACKGROUND=2` ("green") and Ghostty paints them as Morandi sage everywhere.
+After this, new shells load the modular zsh config (keybindings, tools, dev, git worktree `wt`, utilities). Customize the prompt with `p10k configure` — writes go through the symlink to `<repo>/home/.p10k.zsh`. The palette is applied at the terminal level via `home/.config/ghostty/config` (ANSI 0-15 → Orca's default hex), so p10k can use upstream-style semantic codes like `BACKGROUND=2` ("green") and Ghostty paints them in the theme's green everywhere.
 
 ---
 

@@ -71,7 +71,7 @@ home/              # Mirrors $HOME; everything here is auto-symlinked into $HOME
   .tmux.conf       #   -> ~/.tmux.conf
   .config/nvim/    #   -> ~/.config/nvim  (Lazy.nvim, plugins, LSP)
   .config/cmux/    #   -> ~/.config/cmux  (pane-layout commands, actions)
-  .config/ghostty/ #   -> ~/.config/ghostty (Morandi ANSI palette)
+  .config/ghostty/ #   -> ~/.config/ghostty (Orca-parity canvas + ANSI palette)
   .claude/statusline-command.sh  # -> ~/.claude/statusline-command.sh
 shell/             # Auto-sourced zsh modules (keybindings, tools, dev, git, utilities)
 scripts/           # Install-time: bootstrap, Brewfiles, and the dotfile linker
