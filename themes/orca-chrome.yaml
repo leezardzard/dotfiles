@@ -1,0 +1,38 @@
+# Orca terminal theme — Warp-format YAML, the only shape Orca's importer parses.
+#
+# Import: Orca → Settings → Terminal → Import from YAML → pick this file, then
+# select "Orca Chrome" as the dark terminal theme. Orca copies the colors into
+# its own store on import; editing this file afterwards does NOT update Orca,
+# so re-import (under a new `name`) to roll a change out.
+#
+# Not symlinked into $HOME — Orca keeps imported themes in Application Support,
+# not a config dir, so there is nothing for scripts/link-dotfiles.zsh to wire up.
+#
+# `background` matches Orca's app-chrome neutral and home/.config/ghostty/config;
+# the 16 ANSI colors are the same Tomorrow Night set as the Ghostty palette.
+# Keep all three in sync — that parity is the entire point of the file.
+name: Orca Chrome
+background: "#171717"
+foreground: "#ffffff"
+accent: "#81a2be"
+cursor: "#ffffff"
+details: darker
+terminal_colors:
+  normal:
+    black: "#1d1f21"
+    red: "#cc6666"
+    green: "#b5bd68"
+    yellow: "#f0c674"
+    blue: "#81a2be"
+    magenta: "#b294bb"
+    cyan: "#8abeb7"
+    white: "#c5c8c6"
+  bright:
+    black: "#666666"
+    red: "#d54e53"
+    green: "#b9ca4a"
+    yellow: "#e7c547"
+    blue: "#7aa6da"
+    magenta: "#c397d8"
+    cyan: "#70c0b1"
+    white: "#eaeaea"

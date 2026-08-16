@@ -38,8 +38,8 @@ skipped — so the link set always equals the tracked set.
 |------|-----------|-------------|
 | `home/.p10k.zsh` | `~/.p10k.zsh` | Powerlevel10k config; `p10k configure` writes through the symlink into the repo. |
 | `home/.tmux.conf`, `home/.tmux.powerline.conf` | `~/…` | Tmux configs. |
-| `home/.config/ghostty/` | `~/.config/ghostty` | Ghostty terminal config — pinned canvas colors + Orca-parity ANSI 0-15 palette override; affects every CLI tool emitting ANSI 0-15. `cmux reload-config` reloads in place. |
-| `home/.config/cmux/` | `~/.config/cmux` | cmux config (`cmux.json` pane layouts + workspace colors and sidebar tint, keyed to the Ghostty palette). `colors.json` is the git-ignored persisted repo→color map. |
+| `home/.config/ghostty/` | `~/.config/ghostty` | Ghostty terminal config — canvas pinned to Orca's app-chrome neutral (`#171717`) + Orca-parity ANSI 0-15 palette override; affects every CLI tool emitting ANSI 0-15. `cmux reload-config` reloads in place. |
+| `home/.config/cmux/` | `~/.config/cmux` | cmux config (`cmux.json` pane layouts + workspace colors and sidebar tint, keyed to the Ghostty palette and canvas). `colors.json` is the git-ignored persisted repo→color map. |
 | `home/.config/nvim/` | `~/.config/nvim` | Neovim config (Lazy.nvim, core, plugins, LSP). |
 | `home/.claude/statusline-command.sh` | `~/.claude/statusline-command.sh` | Claude Code status line (four-line "bullet" style; weekly usage via `ccusage`). `bootstrap-zshrc.zsh` rewrites `statusLine.command` in each `settings.json` to a portable `$HOME`-relative path. Runtime deps: `jq`, `ccusage`. |
 
@@ -49,6 +49,15 @@ skipped — so the link set always equals the tracked set.
 > run if `~/.config` is itself a whole-dir symlink into the repo (the historical
 > ELOOP cause). These leaf-link dirs are listed in `LEAF_LINK_DIRS` in
 > `scripts/link-dotfiles.zsh` — the only knob, and it grows rarely.
+
+## `themes/` (hand-imported themes)
+
+Not symlinked — these are files an app imports through its own UI, copying the
+colors into its private store. Editing one here does not update the app; re-import.
+
+| Path | Description |
+|------|-------------|
+| `orca-chrome.yaml` | Orca terminal theme in Warp-format YAML (the only shape Orca's importer accepts). Settings → Terminal → Import from YAML. Background matches Orca's app chrome and the Ghostty canvas; ANSI 0-15 matches the Ghostty palette. |
 
 ## `shell/` (Zsh runtime)
 
