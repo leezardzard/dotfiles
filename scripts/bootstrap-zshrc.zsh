@@ -130,8 +130,46 @@ fi
 ###############################################################################
 if ! is_package_installed "git-delta"; then
   brew install git-delta
-  cp ./shell/git/gitconfig ~/.gitconfig
 fi
+
+###############################################################################
+# Deploy tracked gitconfig (delta pager, merge/diff settings). Runs on every
+# bootstrap — not gated on the git-delta install check above — so fixes to
+# shell/git/gitconfig reach machines that already have delta installed.
+# Machine-local identity and the git-lfs filter live in ~/.gitconfig.local,
+# included by shell/git/gitconfig, so they survive every re-run instead of
+# being clobbered by the cp below.
+###############################################################################
+# One-time backup of whatever ~/.gitconfig held before dotfiles managed it.
+# Never clobbered on later runs — it's meant to hold the pristine original.
+if [ -f ~/.gitconfig ] && [ ! -f ~/.gitconfig.bak ]; then
+  cp ~/.gitconfig ~/.gitconfig.bak
+fi
+
+# Create ~/.gitconfig.local if missing, migrating [user] and [filter "lfs"]
+# out of any pre-existing ~/.gitconfig so identity/lfs config isn't lost.
+# Never overwritten once it exists — this is where machine-local config lives.
+if [ ! -f ~/.gitconfig.local ]; then
+  if [ -f ~/.gitconfig ]; then
+    awk '
+      /^\[user\]/ || /^\[filter "lfs"\]/ { keep = 1; print; next }
+      /^\[/ { keep = 0 }
+      keep { print }
+    ' ~/.gitconfig >~/.gitconfig.local
+  fi
+  if [ ! -s ~/.gitconfig.local ]; then
+    cat >~/.gitconfig.local <<'EOF'
+# Machine-local git config — not tracked by dotfiles (included from
+# shell/git/gitconfig). Fill in your identity below; `git lfs install` will
+# add a [filter "lfs"] section here too if you use git-lfs.
+[user]
+    # name = Your Name
+    # email = you@example.com
+EOF
+  fi
+fi
+
+cp ./shell/git/gitconfig ~/.gitconfig
 
 ###############################################################################
 # Install tlrc (better version of man for command help docs)
