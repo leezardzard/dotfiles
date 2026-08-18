@@ -92,7 +92,7 @@ It removes any stale `~/.docker/run/docker.sock` link, ensures a **rootless** Po
 4. **statusLine command** — Rewrites the `statusLine.command` in `~/.claude/settings.json` (and every `claude-switch` profile) to a portable `$HOME`-relative path so it works across devices with different usernames.
 5. **Zsh plugins** — Installs and sources zsh-autosuggestions via Homebrew.
 6. **Tools** — Installs bat, zoxide, eza, dust, atuin, fzf, fd; clones `fzf-git.sh` to `~/fzf-git.sh` if missing.
-7. **Git** — If git-delta not installed: installs it and copies `shell/git/gitconfig` to `~/.gitconfig` (delta pager only; set `user.name` / `user.email` locally).
+7. **Git** — Installs git-delta if missing, then copies `shell/git/gitconfig` to `~/.gitconfig` on **every** run (so fixes reach machines that already have delta). The tracked file is identity-free and includes `~/.gitconfig.local` for machine-local config, which is auto-created on first run (migrating `[user]` / `[filter "lfs"]` out of any pre-existing `~/.gitconfig`, or writing a commented `[user]` template otherwise) and never overwritten afterward — set `user.name` / `user.email` there. A one-time `~/.gitconfig.bak` backup of the pre-dotfiles `~/.gitconfig` is taken before the first overwrite.
 8. **Other** — tlrc, thefuck, fnm, go.
 9. **Claude Code** — Runs the native installer (`curl -fsSL https://claude.ai/install.sh | bash`) when `claude` is missing; the binary lands in `~/.local/bin`, which `tools/claude.zsh` keeps on PATH.
 10. **Bat theme** — Downloads Tokyonight theme and runs `bat cache --build`.

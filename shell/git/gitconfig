@@ -20,3 +20,9 @@
 
 [diff]
     colorMoved = default
+
+# Machine-local identity (user.name/email) and git-lfs config live outside
+# this tracked file so `bootstrap-zshrc.zsh` can redeploy it on every run
+# without wiping per-machine settings. See ~/.gitconfig.local.
+[include]
+    path = ~/.gitconfig.local
