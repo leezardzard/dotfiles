@@ -6,14 +6,17 @@
 
 [delta]
     navigate = true    # use n and N to move between diff sections
-    side-by-side = true 
+    side-by-side = true
 
-    # delta detects terminal colors automatically; set one of these to disable auto-detection
-    # dark = true
+    # Pin the theme so delta does NOT auto-detect terminal colors. Auto-detection
+    # emits OSC 10/11 queries; on short output the reply can arrive after delta
+    # exits and get echoed as stray text (e.g. `10;rgb:ffff/ffff/ffff`). Our
+    # terminals are dark (see ghostty config), so pin dark. Flip to light if needed.
+    dark = true
     # light = true
 
 [merge]
     conflictstyle = diff3
 
 [diff]
-    colorMoved = default 
+    colorMoved = default
