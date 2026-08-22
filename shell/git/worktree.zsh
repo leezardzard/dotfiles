@@ -65,6 +65,43 @@ _worktree_default_branch() {
   echo main
 }
 
+# _worktree_resolve_anchor: Print the anchor worktree path used to place new worktrees.
+# Prefers the main/master worktree; when neither exists, falls back to git's
+# FIRST-listed worktree (the primary checkout) — never to the current worktree,
+# which would compound nested names. Mirrors the reference plugin's wtResolveMainRoot.
+_worktree_resolve_anchor() {
+  local anchor
+  anchor=$(_worktree_get_main_path)
+  anchor="${anchor%%[[:space:]]*}"
+  if [[ -z "$anchor" ]]; then
+    local wt_list line
+    wt_list=$(_worktree_git worktree list --porcelain 2>/dev/null) || return 1
+    while IFS= read -r line; do
+      if [[ "$line" == worktree\ * ]]; then
+        anchor="${line#worktree }"
+        break
+      fi
+    done <<< "$wt_list"
+  fi
+  echo "$anchor"
+}
+
+# _worktree_compute_path: Print the canonical container path for a branch worktree,
+# anchored on the MAIN worktree:
+#   <main-parent>/<main-name>-worktrees/<path-safe-branch>
+# All worktrees for a repo live under one <repo>-worktrees/ container instead of
+# cluttering the parent directory. Prints nothing on failure.
+_worktree_compute_path() {
+  local branch="$1"
+  local anchor
+  anchor=$(_worktree_resolve_anchor)
+  [[ -z "$anchor" ]] && return 1
+  local repo_name="${anchor:t}"
+  local repo_parent="${anchor:h}"
+  local path_safe=$(_worktree_branch_to_path_safe "$branch")
+  echo "$repo_parent/$repo_name-worktrees/$path_safe"
+}
+
 # _worktree_relative_path from_dir to_path -> relative path such that from_dir/result == to_path (conceptually).
 _worktree_relative_path() {
   local from_dir="${1:A}" to_path="${2:A}"
@@ -285,18 +322,14 @@ worktree_add_remote_branch() {
     return 0
   fi
 
-  # Auto-detect paths and names (similar to worktree_add_branch).
-  # Anchor on the MAIN worktree so nested creation doesn't compound names
-  # (<repo>-B, not <repo>-A-B). Fall back to current worktree if no main found.
-  local repo_root=$(_worktree_git rev-parse --show-toplevel)
-  local anchor_path
-  anchor_path=$(_worktree_get_main_path)
-  anchor_path="${anchor_path%%[[:space:]]*}"
-  [[ -z "$anchor_path" ]] && anchor_path="$repo_root"
-  local repo_name="${anchor_path:t}"
-  local repo_parent_dir="${anchor_path:h}"
-  local path_safe=$(_worktree_branch_to_path_safe "$selected_branch")
-  local new_worktree_path="$repo_parent_dir/$repo_name-$path_safe"
+  # Compute the canonical container path (see worktree_add_branch), anchored on
+  # the MAIN worktree:  <repo>-worktrees/<path-safe-branch>.
+  local new_worktree_path
+  new_worktree_path=$(_worktree_compute_path "$selected_branch")
+  if [[ -z "$new_worktree_path" ]]; then
+    echo "❌ Error: Could not determine worktree path."
+    return 1
+  fi
 
   echo "🌿 Checking out remote branch '$selected_branch' to new worktree..."
   echo "   Path: $new_worktree_path"
@@ -355,29 +388,20 @@ worktree_add_branch() {
   local parent_branch="$2"
 
   # --- 2. Auto-detect Paths and Names ---
-  # Get the absolute path of the Git repository's root directory.
-  local repo_root=$(_worktree_git rev-parse --show-toplevel)
-  if [[ -z "$repo_root" ]]; then
-    # Cannot proceed if not inside a Git repository.
+  # Bail if not inside a Git repository.
+  if ! _worktree_git rev-parse --show-toplevel > /dev/null 2>&1; then
     return 1
   fi
 
-  # Anchor new worktree paths on the MAIN worktree, not the current one, so
-  # creating branch B from inside worktree A yields <repo>-B, not <repo>-A-B.
-  # Fall back to the current worktree when no main/master worktree is found.
-  local anchor_path
-  anchor_path=$(_worktree_get_main_path)
-  anchor_path="${anchor_path%%[[:space:]]*}"
-  [[ -z "$anchor_path" ]] && anchor_path="$repo_root"
-
-  # Get the project folder name from the anchor path.
-  local repo_name="${anchor_path:t}"
-  # Get the parent directory path of the project.
-  local repo_parent_dir="${anchor_path:h}"
-
-  # Construct the full path for the new worktree (use path-safe branch name to avoid nested folders).
-  local path_safe=$(_worktree_branch_to_path_safe "$branch_name")
-  local new_worktree_path="$repo_parent_dir/$repo_name-$path_safe"
+  # Compute the canonical container path, anchored on the MAIN worktree so that
+  # creating branch B from inside worktree A lands at <repo>-worktrees/B rather
+  # than nesting deeper. All worktrees for the repo live under <repo>-worktrees/.
+  local new_worktree_path
+  new_worktree_path=$(_worktree_compute_path "$branch_name")
+  if [[ -z "$new_worktree_path" ]]; then
+    echo "❌ Error: Could not determine worktree path (not in a git repository?)."
+    return 1
+  fi
 
   # --- 3. Intelligently Decide and Execute ---
   # Check if the branch already exists and already has a worktree (one branch = one folder).
@@ -544,6 +568,16 @@ worktree_remove() {
     fi
   done
 
+  # Prune now-empty <repo>-worktrees/ container(s) left behind by removal.
+  # Only touches our own container dirs, and only when they hold nothing.
+  local parent
+  for (( i = 1; i <= ${#paths[@]}; i++ )); do
+    parent="${paths[$i]:h}"
+    if [[ "${parent:t}" == *-worktrees && -d "$parent" && -z "$(/bin/ls -A "$parent" 2>/dev/null)" ]]; then
+      /bin/rmdir "$parent" 2>/dev/null && echo "🧹 Removed empty container: $parent"
+    fi
+  done
+
   echo "✅ Removed ${#removed[@]} worktree(s)."
   if (( ${#failed[@]} > 0 )); then
     echo "⚠️  Failed: ${#failed[@]}"
@@ -564,8 +598,11 @@ wt - Git worktree switcher (fzf)
 
 Usage: wt <subcommand> [args]
 
+Layout: worktrees are created under one container next to the main repo:
+  <repo>-worktrees/<branch>   (slashes in branch names become dashes)
+
 Subcommands:
-  add [-p] <branch> [parent]  Add a worktree for a branch. New branch defaults to main/master; use -p to fzf-pick parent.
+  add [-p] <branch> [parent]  Add a worktree under <repo>-worktrees/. New branch defaults to main/master; use -p to fzf-pick parent.
   remote                     Fzf-pick a remote branch and add a worktree for it.
   go                         Fzf-pick a worktree and cd into it.
   ls                         Browse worktrees in fzf with a status/log preview (view-only). Plain list if fzf missing.
