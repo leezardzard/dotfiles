@@ -6,9 +6,11 @@ Highlights for adopters: **wt** worktree commands, Git delta, fzf-git, shell ali
 
 The **wt** command is an fzf-based Git worktree switcher (see `shell/git/worktree.zsh`).
 
+Worktrees are created under a single container directory next to the main repo, anchored on the main worktree: `<repo>-worktrees/<branch>` (slashes in branch names become dashes). For a repo checked out at `repo_1/`, branches land at `repo_1-worktrees/feature-x`, `repo_1-worktrees/bugfix-y`, and so on — keeping the parent directory clean. `wt rm` prunes the container when its last worktree is removed.
+
 | Command | Description |
 |---------|-------------|
-| `wt add <branch>` | Add a worktree for a branch (creates the branch if it doesn’t exist). |
+| `wt add <branch>` | Add a worktree for a branch under `<repo>-worktrees/` (creates the branch if it doesn’t exist). |
 | `wt remote` | Fzf-pick a remote branch and add a worktree for it. |
 | `wt go` | Fzf-pick a worktree and `cd` into it. |
 | `wt wl` | Initialize whitelist: fzf-pick ignored paths from the main worktree and write to `.worktree-sync-whitelist`. |
